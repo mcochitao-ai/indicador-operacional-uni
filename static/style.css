@@ -285,6 +285,14 @@ select:focus {
     transition: none !important;
 }
 
+/* Em modo de captura, garanta que nada mostre barras de rolagem */
+.capture-mode {
+    overflow: hidden !important;
+}
+.capture-mode #report-capture {
+    overflow: hidden !important;
+}
+
 .report-header {
     background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
     color: white;
@@ -471,11 +479,14 @@ select:focus {
 }
 
 .cd-name {
-    font-size: 0.9em;
+    font-size: 0.85em;
     font-weight: 700;
     color: #2c3e50;
     margin-bottom: 8px;
     text-transform: uppercase;
+    white-space: nowrap;           /* não quebrar linha */
+    overflow: hidden;              /* ocultar excesso */
+    text-overflow: ellipsis;       /* reticências se necessário */
 }
 
 .cd-status {
@@ -484,6 +495,8 @@ select:focus {
     align-items: center;
     justify-content: center;
     gap: 6px;
+    flex-wrap: nowrap;             /* mantém tudo em uma linha */
+    white-space: nowrap;
 }
 
 .status-label {
@@ -499,6 +512,7 @@ select:focus {
     font-size: 0.7em;
     font-weight: 700;
     text-transform: uppercase;
+    white-space: nowrap;           /* evita quebra de linha dentro do badge */
 }
 
 .status-open {

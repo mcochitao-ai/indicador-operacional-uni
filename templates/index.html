@@ -220,7 +220,6 @@
                         </div>
                         <div class="cd-name">${cd.nome}</div>
                         <div class="cd-status">
-                            <span class="status-label">OP.</span>
                             <span class="status-badge ${statusClass}">${statusTexto}</span>
                         </div>
                         <div class="cd-metrics">
@@ -903,37 +902,59 @@
             const elemento = document.getElementById('report-capture');
             const botoes = document.querySelector('.action-buttons');
             const body = document.body;
+            const html = document.documentElement;
 
             // Esconder botões temporariamente e desabilitar animações
             botoes.style.display = 'none';
             body.classList.add('capture-mode');
 
+            // Ocultar barras de rolagem durante a captura para evitar faixa branca
+            const prevHtmlOverflow = html.style.overflow;
+            const prevBodyOverflow = body.style.overflow;
+            const prevElemOverflow = elemento.style.overflow;
+            html.style.overflow = 'hidden';
+            body.style.overflow = 'hidden';
+            elemento.style.overflow = 'hidden';
+
             // Aguardar para garantir que todos os gráficos terminaram de animar
             const esperaMs = 1600; // tempo suficiente para Chart.js concluir animações
             setTimeout(() => {
                 // Configurações para melhor qualidade e captura completa
+                const targetWidth = elemento.clientWidth;   // exclui a calha da barra de rolagem
+                const targetHeight = elemento.scrollHeight; // altura total do conteúdo
+
                 html2canvas(elemento, {
                     scale: 3, // Alta resolução
                     backgroundColor: '#ffffff',
                     logging: false,
                     useCORS: true,
                     allowTaint: true,
-                    windowWidth: elemento.scrollWidth,
-                    windowHeight: elemento.scrollHeight,
-                    width: elemento.scrollWidth,
-                    height: elemento.scrollHeight,
+                    windowWidth: targetWidth,
+                    windowHeight: targetHeight,
+                    width: targetWidth,
+                    height: targetHeight,
                     x: 0,
                     y: 0,
                     removeContainer: true,
                     onclone: (doc) => {
                         // Garante fundo branco na cópia
                         const rc = doc.getElementById('report-capture');
-                        if (rc) rc.style.background = '#ffffff';
+                        if (rc) {
+                            rc.style.background = '#ffffff';
+                            rc.style.overflow = 'hidden';
+                        }
+                        doc.documentElement.style.overflow = 'hidden';
+                        doc.body.style.overflow = 'hidden';
                     }
                 }).then(canvas => {
                     // Restaurar botões e animações
                     botoes.style.display = 'flex';
                     body.classList.remove('capture-mode');
+
+                    // Restaurar overflow original
+                    html.style.overflow = prevHtmlOverflow;
+                    body.style.overflow = prevBodyOverflow;
+                    elemento.style.overflow = prevElemOverflow;
 
                     // Converter para imagem e baixar
                     const link = document.createElement('a');
@@ -945,6 +966,9 @@
                 }).catch(error => {
                     botoes.style.display = 'flex';
                     body.classList.remove('capture-mode');
+                    html.style.overflow = prevHtmlOverflow;
+                    body.style.overflow = prevBodyOverflow;
+                    elemento.style.overflow = prevElemOverflow;
                     alert('Erro ao gerar imagem: ' + error.message);
                     console.error('Erro detalhado:', error);
                 });
