@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WH Tower Update - Informações Operacionais</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-chart-line"></i> Indicador Operacional</h1>
+            <p class="subtitle">Análise de Capacidade dos Centros de Distribuição</p>
+        </header>
+
+        <div class="upload-section">
+            <form id="uploadForm" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="arquivo">
+                        <span class="label-text">Selecione o arquivo Excel:</span>
+                        <div class="file-input-wrapper">
+                            <input type="file" id="arquivo" name="arquivo" accept=".xlsx,.xls,.xlsm" required>
+                            <span class="file-name">Nenhum arquivo selecionado</span>
+                        </div>
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label for="dia">
+                        <span class="label-text">Selecione o dia:</span>
+                        <select id="dia" name="dia" required>
+                            <option value="">-- Escolha o dia --</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                            <option value="8">8</option>
+                            <option value="9">9</option>
+                            <option value="10">10</option>
+                            <option value="11">11</option>
+                            <option value="12">12</option>
+                            <option value="13">13</option>
+                            <option value="14">14</option>
+                            <option value="15">15</option>
+                            <option value="16">16</option>
+                            <option value="17">17</option>
+                            <option value="18">18</option>
+                            <option value="19">19</option>
+                            <option value="20">20</option>
+                            <option value="21">21</option>
+                            <option value="22">22</option>
+                            <option value="23">23</option>
+                            <option value="24">24</option>
+                            <option value="25">25</option>
+                            <option value="26">26</option>
+                            <option value="27">27</option>
+                            <option value="28">28</option>
+                            <option value="29">29</option>
+                            <option value="30">30</option>
+                            <option value="31">31</option>
+                        </select>
+                    </label>
+                </div>
+
+                <button type="submit" class="btn-primary" id="submitBtn">
+                    <span class="btn-text">Gerar Indicador</span>
+                    <span class="loader" style="display: none;"></span>
+                </button>
+            </form>
+
+            <div id="error-message" class="error-message" style="display: none;"></div>
+        </div>
+
+        <div id="results" class="results-section" style="display: none;">
+            <!-- Área para captura de imagem -->
+            <div id="report-capture">
+                <!-- Cabeçalho com título e data -->
+                <div class="report-header">
+                    <h1><i class="fas fa-chart-line"></i> WH TOWER UPDATE - INFORMAÇÕES OPERACIONAIS</h1>
+                    <p class="report-date" id="report-date"></p>
+                </div>
+
+                <!-- Subtítulo -->
+                <div class="section-title">
+                    <h2><i class="fas fa-boxes"></i> VOLUME X CAPACIDADES (TONS)</h2>
+                </div>
+                
+                <div id="cds-container" class="cds-container"></div>
+                
+                <!-- Agendamentos -->
+                <div class="section-title" style="margin-top: 20px;">
+                    <h2><i class="fas fa-calendar-check"></i> AGENDAMENTOS</h2>
+                </div>
+                <div id="agendamentos-container" class="agendamentos-container"></div>
+                
+                <!-- Seção Dock Vendas -->
+                <div class="section-title" style="margin-top: 20px;">
+                    <h2><i class="fas fa-truck-loading"></i> DOCK VENDAS PARA FATURAMENTO</h2>
+                </div>
+                <div id="dock-container" class="dock-container"></div>
+                
+                <!-- Seção Dock Total -->
+                <div class="section-title" style="margin-top: 20px;">
+                    <h2><i class="fas fa-warehouse"></i> DOCK TOTAL</h2>
+                </div>
+                <div id="dock-total-container" class="dock-total-container"></div>
+                
+                <!-- Aderência (Backlog/Perdas) -->
+                <div class="section-title" style="margin-top: 20px;">
+                    <h2><i class="fas fa-exclamation-triangle"></i> BACKLOG</h2>
+                </div>
+                <div id="aderencia-container" class="aderencia-container"></div>
+            </div>
+            
+            <div class="action-buttons">
+                <button onclick="baixarComoImagem()" class="btn-primary" style="max-width: 300px; margin: 0 10px;">
+                    <i class="fas fa-camera"></i> Baixar como Imagem
+                </button>
+                <button onclick="location.reload()" class="btn-secondary">
+                    <i class="fas fa-redo"></i> Nova Análise
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('arquivo');
+        const fileName = document.querySelector('.file-name');
+        const uploadForm = document.getElementById('uploadForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const btnText = document.querySelector('.btn-text');
+        const loader = document.querySelector('.loader');
+        const errorMessage = document.getElementById('error-message');
+        const resultsSection = document.getElementById('results');
+
+        // Atualizar nome do arquivo
+        fileInput.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                fileName.textContent = this.files[0].name;
+            } else {
+                fileName.textContent = 'Nenhum arquivo selecionado';
+            }
+        });
+
+        // Submeter formulário
+        uploadForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Limpar mensagens de erro
+            errorMessage.style.display = 'none';
+            resultsSection.style.display = 'none';
+            
+            // Mostrar loading
+            submitBtn.disabled = true;
+            btnText.style.display = 'none';
+            loader.style.display = 'inline-block';
+            
+            const formData = new FormData(uploadForm);
+            
+            try {
+                const response = await fetch('/processar', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    exibirResultados(data.dados);
+                } else {
+                    mostrarErro(data.error || 'Erro ao processar arquivo');
+                }
+            } catch (error) {
+                mostrarErro('Erro ao conectar com o servidor: ' + error.message);
+            } finally {
+                submitBtn.disabled = false;
+                btnText.style.display = 'inline';
+                loader.style.display = 'none';
+            }
+        });
+
+        function mostrarErro(mensagem) {
+            errorMessage.textContent = mensagem;
+            errorMessage.style.display = 'block';
+        }
+
+        function exibirResultados(dados) {
+            // Atualizar data no cabeçalho
+            const hoje = new Date();
+            const dataFormatada = hoje.toLocaleDateString('pt-BR', { 
+                day: '2-digit', 
+                month: '2-digit', 
+                year: 'numeric' 
+            });
+            document.getElementById('report-date').textContent = dataFormatada;
+            
+            const container = document.getElementById('cds-container');
+            container.innerHTML = '';
+            
+            dados.cds.forEach((cd, index) => {
+                const cdCard = document.createElement('div');
+                cdCard.className = 'cd-card';
+                
+                const statusClass = getStatusClass(cd.status_inclusao);
+                const statusTexto = getStatusTexto(cd.status_inclusao);
+                
+                cdCard.innerHTML = `
+                    <div class="cd-content">
+                        <div class="chart-container">
+                            <canvas id="chart-${index}"></canvas>
+                            <div class="chart-center-text">
+                                <span class="chart-percentage">${formatarValor(cd.capacidade_geral, '%')}</span>
+                            </div>
+                        </div>
+                        <div class="cd-name">${cd.nome}</div>
+                        <div class="cd-status">
+                            <span class="status-label">OP.</span>
+                            <span class="status-badge ${statusClass}">${statusTexto}</span>
+                        </div>
+                        <div class="cd-metrics">
+                            <div class="metric-row">
+                                <span class="metric-label">CAIXA</span>
+                                <span class="metric-value ${getMetricClass(cd.capacidade_caixas)}">${formatarValor(cd.capacidade_caixas, '%')}</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">PALETE</span>
+                                <span class="metric-value ${getMetricClass(cd.capacidade_pallet)}">${formatarValor(cd.capacidade_pallet, '%')}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(cdCard);
+                
+                // Criar gráfico donut
+                createDonutChart(`chart-${index}`, cd.capacidade_geral);
+            });
+            
+            resultsSection.style.display = 'block';
+            resultsSection.scrollIntoView({ behavior: 'smooth' });
+            
+            // Exibir Agendamentos
+            exibirAgendamentos(dados.cds);
+            
+            // Exibir Dock Vendas
+            exibirDockVendas(dados.cds);
+            
+            // Exibir Aderência
+            exibirAderencia(dados.perdas);
+            
+            // Exibir Dock Total
+            exibirDockTotal(dados.cds);
+        }
+
+        function exibirAgendamentos(cds) {
+            const container = document.getElementById('agendamentos-container');
+            container.innerHTML = '';
+            
+            let totalAgendamentos = 0;
+            
+            cds.forEach(cd => {
+                totalAgendamentos += cd.agendamentos || 0;
+            });
+            
+            // Criar gráfico de pizza
+            const chartDiv = document.createElement('div');
+            chartDiv.className = 'agendamentos-chart-wrapper';
+            chartDiv.innerHTML = `
+                <div class="agendamentos-chart">
+                    <canvas id="agendamentos-chart"></canvas>
+                    <div class="chart-center-total">
+                        <div class="total-value">${formatarNumeroInteiro(totalAgendamentos)}</div>
+                    </div>
+                </div>
+                <div class="agendamentos-legend" id="agendamentos-legend"></div>
+            `;
+            
+            container.appendChild(chartDiv);
+            
+            // Criar gráfico
+            setTimeout(() => createPieChart(cds, totalAgendamentos), 100);
+        }
+
+        function createPieChart(cds, total) {
+            const ctx = document.getElementById('agendamentos-chart');
+            if (!ctx) return;
+            
+            const cores = ['#e67e22', '#3498db', '#95a5a6', '#f1c40f', '#9b59b6', '#1abc9c', '#34495e', '#e74c3c'];
+            const labels = cds.map(cd => cd.nome);
+            const valores = cds.map(cd => cd.agendamentos || 0);
+            
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: valores,
+                        backgroundColor: cores,
+                        borderWidth: 3,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    animation: {
+                        animateRotate: true,
+                        animateScale: true,
+                        duration: 1200,
+                        easing: 'easeInOutQuart'
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            enabled: true,
+                            backgroundColor: 'rgba(0,0,0,0.85)',
+                            padding: 12,
+                            cornerRadius: 8,
+                            titleFont: { size: 14, weight: 'bold' },
+                            bodyFont: { size: 13 },
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.parsed;
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return context.label + ': ' + formatarNumeroInteiro(value) + ' (' + percentage + '%)';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Criar legenda personalizada
+            const legendContainer = document.getElementById('agendamentos-legend');
+            cds.forEach((cd, index) => {
+                const legendItem = document.createElement('div');
+                legendItem.className = 'pie-legend-item';
+                legendItem.innerHTML = `
+                    <span class="pie-legend-color" style="background: ${cores[index]};"></span>
+                    <span class="pie-legend-text">${cd.nome}</span>
+                    <span class="pie-legend-value">${formatarNumeroInteiro(cd.agendamentos || 0)}</span>
+                `;
+                legendContainer.appendChild(legendItem);
+            });
+        }
+
+        function exibirAderencia(perdas) {
+            const container = document.getElementById('aderencia-container');
+            container.innerHTML = '';
+            
+            if (!perdas || perdas.length === 0) {
+                container.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">Sem dados de backlog</div>';
+                return;
+            }
+            
+            let totalBacklog = 0;
+            
+            perdas.forEach((perda, index) => {
+                const card = document.createElement('div');
+                card.className = 'dock-total-card';
+                
+                const backlog = perda.backlog || 0;
+                const perdasW = perda.perda_w || 0;
+                const perdasT = perda.perda_t || 0;
+                
+                totalBacklog += backlog;
+                
+                card.innerHTML = `
+                    <div class="dock-total-header">
+                        <div class="dock-total-value-top">${formatarNumeroInteiro(backlog)}</div>
+                        <div class="dock-total-name">${perda.nome}</div>
+                    </div>
+                    <div class="dock-total-chart">
+                        <canvas id="backlog-chart-${index}"></canvas>
+                    </div>
+                    <div class="dock-total-legend">
+                        <div class="legend-item">
+                            <span class="legend-color" style="background: #e74c3c;"></span>
+                            <span class="legend-text">Perdas W</span>
+                            <span class="legend-value">${formatarNumeroInteiro(perdasW)}</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color" style="background: #e67e22;"></span>
+                            <span class="legend-text">Perdas T</span>
+                            <span class="legend-value">${formatarNumeroInteiro(perdasT)}</span>
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(card);
+                
+                // Criar gráfico de barras
+                setTimeout(() => createBacklogChart(`backlog-chart-${index}`, perdasW, perdasT), 100);
+            });
+            
+            // Adicionar card de total geral
+            const totalGeralCard = document.createElement('div');
+            totalGeralCard.className = 'dock-total-card dock-card-total-geral';
+            
+            // Calcular totais de perdas W e T
+            let totalPerdasW = 0;
+            let totalPerdasT = 0;
+            perdas.forEach(p => {
+                totalPerdasW += p.perda_w || 0;
+                totalPerdasT += p.perda_t || 0;
+            });
+            
+            totalGeralCard.innerHTML = `
+                <div class="dock-total-header" style="background: #e74c3c; color: white;">
+                    <div class="dock-total-value-top" style="color: white;">${formatarNumeroInteiro(totalBacklog)}</div>
+                    <div class="dock-total-name" style="color: white;">TOTAL GERAL</div>
+                </div>
+                <div class="dock-total-chart">
+                    <canvas id="backlog-chart-total"></canvas>
+                </div>
+                <div class="dock-total-legend">
+                    <div class="legend-item">
+                        <span class="legend-color" style="background: #e74c3c;"></span>
+                        <span class="legend-text">Perdas W</span>
+                        <span class="legend-value">${formatarNumeroInteiro(totalPerdasW)}</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color" style="background: #e67e22;"></span>
+                        <span class="legend-text">Perdas T</span>
+                        <span class="legend-value">${formatarNumeroInteiro(totalPerdasT)}</span>
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(totalGeralCard);
+            setTimeout(() => createBacklogChart('backlog-chart-total', totalPerdasW, totalPerdasT), 100);
+        }
+
+        function createBacklogChart(canvasId, perdasW, perdasT) {
+            const ctx = document.getElementById(canvasId);
+            if (!ctx) return;
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: [''],
+                    datasets: [
+                        {
+                            label: 'Perdas W',
+                            data: [perdasW],
+                            backgroundColor: '#e74c3c',
+                            borderWidth: 0,
+                            borderRadius: 4
+                        },
+                        {
+                            label: 'Perdas T',
+                            data: [perdasT],
+                            backgroundColor: '#e67e22',
+                            borderWidth: 0,
+                            borderRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: {
+                        duration: 1000,
+                        easing: 'easeOutQuart'
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            enabled: true,
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            padding: 10,
+                            cornerRadius: 6,
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + formatarNumeroInteiro(context.parsed.x) + ' tons';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            stacked: true,
+                            display: false
+                        },
+                        y: {
+                            stacked: true,
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        function exibirDockVendas(cds) {
+            const dockContainer = document.getElementById('dock-container');
+            dockContainer.innerHTML = '';
+            
+            let totalGeralProgramacao = 0;
+            let totalGeralInclusao = 0;
+            
+            cds.forEach((cd, index) => {
+                const card = document.createElement('div');
+                card.className = 'dock-total-card';
+                
+                const programacaoValor = cd.dock_vendas || 0;
+                const inclusaoValor = cd.inclusao || 0;
+                const totalValor = cd.total_com_inclusao || 0;
+                
+                totalGeralProgramacao += programacaoValor;
+                totalGeralInclusao += inclusaoValor;
+                
+                const temInclusao = inclusaoValor !== 0;
+                
+                card.innerHTML = `
+                    <div class="dock-total-header">
+                        <div class="dock-total-value-top">${formatarNumeroInteiro(totalValor)}</div>
+                        <div class="dock-total-name">${cd.nome}</div>
+                    </div>
+                    <div class="dock-total-chart">
+                        <canvas id="dock-vendas-chart-${index}"></canvas>
+                    </div>
+                    <div class="dock-total-legend">
+                        <div class="legend-item">
+                            <span class="legend-color" style="background: #2c3e50;"></span>
+                            <span class="legend-text">Programação</span>
+                            <span class="legend-value">${formatarNumeroInteiro(programacaoValor)}</span>
+                        </div>
+                        ${temInclusao ? `
+                        <div class="legend-item">
+                            <span class="legend-color" style="background: #27ae60;"></span>
+                            <span class="legend-text">Inclusão</span>
+                            <span class="legend-value">${formatarNumeroInteiro(inclusaoValor)}</span>
+                        </div>
+                        ` : `
+                        <div class="legend-item legend-item-sem">
+                            <span class="legend-text-sem">Sem inclusão</span>
+                        </div>
+                        `}
+                    </div>
+                `;
+                
+                dockContainer.appendChild(card);
+                
+                // Criar gráfico de barras
+                setTimeout(() => createBarChartVendas(`dock-vendas-chart-${index}`, programacaoValor, inclusaoValor), 100);
+            });
+            
+            // Adicionar card de total geral
+            const totalGeralCard = document.createElement('div');
+            totalGeralCard.className = 'dock-total-card dock-card-total-geral';
+            const totalGeral = totalGeralProgramacao + totalGeralInclusao;
+            
+            totalGeralCard.innerHTML = `
+                <div class="dock-total-header" style="background: #27ae60; color: white;">
+                    <div class="dock-total-value-top" style="color: white;">${formatarNumeroInteiro(totalGeral)}</div>
+                    <div class="dock-total-name" style="color: white;">TOTAL GERAL</div>
+                </div>
+                <div class="dock-total-chart">
+                    <canvas id="dock-vendas-chart-total"></canvas>
+                </div>
+                <div class="dock-total-legend">
+                    <div class="legend-item">
+                        <span class="legend-color" style="background: #2c3e50;"></span>
+                        <span class="legend-text">Programação</span>
+                        <span class="legend-value">${formatarNumeroInteiro(totalGeralProgramacao)}</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color" style="background: #27ae60;"></span>
+                        <span class="legend-text">Inclusão</span>
+                        <span class="legend-value">${formatarNumeroInteiro(totalGeralInclusao)}</span>
+                    </div>
+                </div>
+            `;
+            
+            dockContainer.appendChild(totalGeralCard);
+            setTimeout(() => createBarChartVendas('dock-vendas-chart-total', totalGeralProgramacao, totalGeralInclusao), 100);
+        }
+
+        function createBarChartVendas(canvasId, programacao, inclusao) {
+            const ctx = document.getElementById(canvasId);
+            if (!ctx) return;
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: [''],
+                    datasets: [
+                        {
+                            label: 'Programação',
+                            data: [programacao],
+                            backgroundColor: '#2c3e50',
+                            borderWidth: 0,
+                            borderRadius: 4
+                        },
+                        {
+                            label: 'Inclusão',
+                            data: [inclusao],
+                            backgroundColor: '#27ae60',
+                            borderWidth: 0,
+                            borderRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: {
+                        duration: 1000,
+                        easing: 'easeOutQuart'
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            enabled: true,
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            padding: 10,
+                            cornerRadius: 6,
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + formatarNumeroInteiro(context.parsed.x);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            stacked: true,
+                            display: false
+                        },
+                        y: {
+                            stacked: true,
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        function exibirDockTotal(cds) {
+            const container = document.getElementById('dock-total-container');
+            container.innerHTML = '';
+            
+            let totalGeralVendas = 0;
+            let totalGeralTransferencias = 0;
+            
+            cds.forEach((cd, index) => {
+                const card = document.createElement('div');
+                card.className = 'dock-total-card';
+                
+                const totalValor = cd.dock_total_geral || 0;
+                const vendasValor = cd.dock_total_vendas || 0;
+                const transferenciasValor = cd.dock_total_transferencias || 0;
+                
+                totalGeralVendas += vendasValor;
+                totalGeralTransferencias += transferenciasValor;
+                
+                card.innerHTML = `
+                    <div class="dock-total-header">
+                        <div class="dock-total-value-top">${formatarNumeroInteiro(totalValor)}</div>
+                        <div class="dock-total-name">${cd.nome}</div>
+                    </div>
+                    <div class="dock-total-chart">
+                        <canvas id="dock-chart-${index}"></canvas>
+                    </div>
+                    <div class="dock-total-legend">
+                        <div class="legend-item">
+                            <span class="legend-color" style="background: #3498db;"></span>
+                            <span class="legend-text">Vendas</span>
+                            <span class="legend-value">${formatarNumeroInteiro(vendasValor)}</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color" style="background: #95a5a6;"></span>
+                            <span class="legend-text">Transferências</span>
+                            <span class="legend-value">${formatarNumeroInteiro(transferenciasValor)}</span>
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(card);
+                
+                // Criar gráfico de barras
+                setTimeout(() => createBarChart(`dock-chart-${index}`, vendasValor, transferenciasValor), 100);
+            });
+            
+            // Adicionar card de total geral
+            const totalGeralCard = document.createElement('div');
+            totalGeralCard.className = 'dock-total-card dock-card-total-geral';
+            const totalGeral = totalGeralVendas + totalGeralTransferencias;
+            
+            totalGeralCard.innerHTML = `
+                <div class="dock-total-header" style="background: #3498db; color: white;">
+                    <div class="dock-total-value-top" style="color: white;">${formatarNumeroInteiro(totalGeral)}</div>
+                    <div class="dock-total-name" style="color: white;">TOTAL GERAL</div>
+                </div>
+                <div class="dock-total-chart">
+                    <canvas id="dock-chart-total"></canvas>
+                </div>
+                <div class="dock-total-legend">
+                    <div class="legend-item">
+                        <span class="legend-color" style="background: #3498db;"></span>
+                        <span class="legend-text">Vendas</span>
+                        <span class="legend-value">${formatarNumeroInteiro(totalGeralVendas)}</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color" style="background: #95a5a6;"></span>
+                        <span class="legend-text">Transferências</span>
+                        <span class="legend-value">${formatarNumeroInteiro(totalGeralTransferencias)}</span>
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(totalGeralCard);
+            setTimeout(() => createBarChart('dock-chart-total', totalGeralVendas, totalGeralTransferencias), 100);
+        }
+
+        function createBarChart(canvasId, vendas, transferencias) {
+            const ctx = document.getElementById(canvasId);
+            if (!ctx) return;
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: [''],
+                    datasets: [
+                        {
+                            label: 'Vendas',
+                            data: [vendas],
+                            backgroundColor: '#3498db',
+                            borderWidth: 0,
+                            borderRadius: 4
+                        },
+                        {
+                            label: 'Transferências',
+                            data: [transferencias],
+                            backgroundColor: '#95a5a6',
+                            borderWidth: 0,
+                            borderRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: {
+                        duration: 1000,
+                        easing: 'easeOutQuart'
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            enabled: true,
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            padding: 10,
+                            cornerRadius: 6,
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + formatarNumeroInteiro(context.parsed.x);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            stacked: true,
+                            display: false
+                        },
+                        y: {
+                            stacked: true,
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        function createDonutChart(canvasId, percentage) {
+            const ctx = document.getElementById(canvasId);
+            if (!ctx) return;
+            
+            const valor = percentage || 0;
+            const restante = Math.max(0, 100 - valor);
+            
+            // Definir cor baseada no valor
+            let cor = '#4CAF50'; // Verde
+            if (valor > 100) cor = '#8B0000'; // Vermelho escuro
+            else if (valor >= 90) cor = '#DC3545'; // Vermelho
+            else if (valor >= 70) cor = '#FFC107'; // Amarelo
+            
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    datasets: [{
+                        data: valor > 100 ? [100, 0] : [valor, restante],
+                        backgroundColor: [cor, '#E0E0E0'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    cutout: '75%',
+                    animation: {
+                        animateRotate: true,
+                        animateScale: true,
+                        duration: 1200,
+                        easing: 'easeInOutQuart'
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            enabled: true,
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            padding: 12,
+                            cornerRadius: 8,
+                            titleFont: { size: 14, weight: 'bold' },
+                            bodyFont: { size: 13 },
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Capacidade: ' + formatarNumeroInteiro(valor) + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function getCapacidadeClass(valor) {
+            if (valor === null || valor === undefined) return '';
+            if (valor > 100) return 'alert-critical';
+            if (valor >= 90) return 'alert-danger';
+            if (valor >= 70) return 'alert-warning';
+            return 'alert-success';
+        }
+
+        function getStatusClass(status) {
+            if (!status) return 'status-unknown';
+            const statusLower = status.toString().toLowerCase();
+            if (statusLower === 'aberto' || statusLower === 'sim' || statusLower === 's') {
+                return 'status-open';
+            }
+            return 'status-closed';
+        }
+
+        function getStatusTexto(status) {
+            if (!status) return 'Indefinido';
+            const statusLower = status.toString().toLowerCase();
+            if (statusLower === 'aberto' || statusLower === 'sim' || statusLower === 's') {
+                return '✓ ABERTO';
+            }
+            return '✗ SEM OPORTUNIDADE';
+        }
+
+        function getMetricClass(valor) {
+            if (valor === null || valor === undefined) return '';
+            if (valor > 100) return 'metric-critical';
+            if (valor >= 90) return 'metric-danger';
+            return '';
+        }
+
+        function formatarValor(valor, sufixo = '') {
+            if (valor === null || valor === undefined) {
+                return 'N/A';
+            }
+            // Arredondar para número inteiro
+            return Math.round(valor) + sufixo;
+        }
+
+        function formatarNumero(valor) {
+            if (valor === null || valor === undefined) {
+                return 'N/A';
+            }
+            return valor.toLocaleString('pt-BR');
+        }
+
+        function formatarNumeroDecimal(valor) {
+            if (valor === null || valor === undefined || valor === 0) {
+                return '0';
+            }
+            return Number(valor).toLocaleString('pt-BR', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 2
+            });
+        }
+
+        function formatarNumeroInteiro(valor) {
+            if (valor === null || valor === undefined || valor === 0) {
+                return '0';
+            }
+            return Math.round(Number(valor)).toLocaleString('pt-BR');
+        }
+
+        function baixarComoImagem() {
+            const elemento = document.getElementById('report-capture');
+            const botoes = document.querySelector('.action-buttons');
+            
+            // Esconder botões temporariamente
+            botoes.style.display = 'none';
+            
+            // Aguardar um pouco para garantir que tudo renderizou
+            setTimeout(() => {
+                // Configurações para melhor qualidade e captura completa
+                html2canvas(elemento, {
+                    scale: 3, // Alta resolução
+                    backgroundColor: '#ffffff',
+                    logging: false,
+                    useCORS: true,
+                    allowTaint: true,
+                    windowWidth: elemento.scrollWidth,
+                    windowHeight: elemento.scrollHeight,
+                    width: elemento.scrollWidth,
+                    height: elemento.scrollHeight,
+                    x: 0,
+                    y: 0
+                }).then(canvas => {
+                    // Restaurar botões
+                    botoes.style.display = 'flex';
+                    
+                    // Converter para imagem e baixar
+                    const link = document.createElement('a');
+                    const hoje = new Date();
+                    const dataArquivo = hoje.toISOString().slice(0, 10).replace(/-/g, '');
+                    link.download = `WH_Tower_Update_${dataArquivo}.png`;
+                    link.href = canvas.toDataURL('image/png', 1.0);
+                    link.click();
+                }).catch(error => {
+                    botoes.style.display = 'flex';
+                    alert('Erro ao gerar imagem: ' + error.message);
+                    console.error('Erro detalhado:', error);
+                });
+            }, 300);
+        }
+    </script>
+</body>
+</html>
