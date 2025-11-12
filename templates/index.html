@@ -265,91 +265,35 @@
             container.innerHTML = '';
             
             let totalAgendamentos = 0;
-            
             cds.forEach(cd => {
                 totalAgendamentos += cd.agendamentos || 0;
             });
             
-            // Criar gráfico de pizza
-            const chartDiv = document.createElement('div');
-            chartDiv.className = 'agendamentos-chart-wrapper';
-            chartDiv.innerHTML = `
-                <div class="agendamentos-chart">
-                    <canvas id="agendamentos-chart"></canvas>
-                    <div class="chart-center-total">
-                        <div class="total-value">${formatarNumeroInteiro(totalAgendamentos)}</div>
-                    </div>
-                </div>
-                <div class="agendamentos-legend" id="agendamentos-legend"></div>
-            `;
-            
-            container.appendChild(chartDiv);
-            
-            // Criar gráfico
-            setTimeout(() => createPieChart(cds, totalAgendamentos), 100);
-        }
-
-        function createPieChart(cds, total) {
-            const ctx = document.getElementById('agendamentos-chart');
-            if (!ctx) return;
-            
-            const cores = ['#e67e22', '#3498db', '#95a5a6', '#f1c40f', '#9b59b6', '#1abc9c', '#34495e', '#e74c3c'];
-            const labels = cds.map(cd => cd.nome);
-            const valores = cds.map(cd => cd.agendamentos || 0);
-            
-            new Chart(ctx, {
-                type: 'pie',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: valores,
-                        backgroundColor: cores,
-                        borderWidth: 3,
-                        borderColor: '#fff'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    animation: {
-                        animateRotate: true,
-                        animateScale: true,
-                        duration: 1200,
-                        easing: 'easeInOutQuart'
-                    },
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            enabled: true,
-                            backgroundColor: 'rgba(0,0,0,0.85)',
-                            padding: 12,
-                            cornerRadius: 8,
-                            titleFont: { size: 14, weight: 'bold' },
-                            bodyFont: { size: 13 },
-                            callbacks: {
-                                label: function(context) {
-                                    const value = context.parsed;
-                                    const percentage = ((value / total) * 100).toFixed(1);
-                                    return context.label + ': ' + formatarNumeroInteiro(value) + ' (' + percentage + '%)';
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-            
-            // Criar legenda personalizada
-            const legendContainer = document.getElementById('agendamentos-legend');
+            // Criar barras horizontais para cada CD
             cds.forEach((cd, index) => {
-                const legendItem = document.createElement('div');
-                legendItem.className = 'pie-legend-item';
-                legendItem.innerHTML = `
-                    <span class="pie-legend-color" style="background: ${cores[index]};"></span>
-                    <span class="pie-legend-text">${cd.nome}</span>
-                    <span class="pie-legend-value">${formatarNumeroInteiro(cd.agendamentos || 0)}</span>
+                const valor = cd.agendamentos || 0;
+                const percentual = totalAgendamentos > 0 ? (valor / totalAgendamentos * 100) : 0;
+                
+                const barItem = document.createElement('div');
+                barItem.className = 'agendamento-bar-item';
+                barItem.innerHTML = `
+                    <div class="agendamento-bar-label">${cd.nome}</div>
+                    <div class="agendamento-bar-wrapper">
+                        <div class="agendamento-bar-fill" style="width: ${percentual}%"></div>
+                    </div>
+                    <div class="agendamento-bar-value">${formatarNumeroInteiro(valor)}</div>
                 `;
-                legendContainer.appendChild(legendItem);
+                container.appendChild(barItem);
             });
+            
+            // Adicionar card de total
+            const totalCard = document.createElement('div');
+            totalCard.className = 'agendamento-total-card';
+            totalCard.innerHTML = `
+                <div class="agendamento-total-label">TOTAL GERAL</div>
+                <div class="agendamento-total-value">${formatarNumeroInteiro(totalAgendamentos)}</div>
+            `;
+            container.appendChild(totalCard);
         }
 
         function exibirAderencia(perdas) {

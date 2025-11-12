@@ -363,60 +363,84 @@ select:focus {
 /* Agendamentos */
 .agendamentos-container {
     background: white;
-    padding: 25px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 30px;
+    padding: 20px;
     border-top: 3px solid #e0e0e0;
-}
-
-.agendamentos-chart-wrapper {
-    display: flex;
-    gap: 30px;
-    align-items: center;
-    max-width: 900px;
-}
-
-.agendamentos-chart {
-    position: relative;
-    width: 250px;
-    height: 250px;
-}
-
-.chart-center-total {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    text-align: center;
-}
-
-.total-value {
-    font-size: 2.5em;
-    font-weight: 700;
-    color: #2c3e50;
-}
-
-.agendamentos-legend {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-}
-
-.pie-legend-item {
-    display: flex;
-    align-items: center;
     gap: 10px;
-    font-size: 0.9em;
-    padding: 4px 0;
 }
 
-.pie-legend-color {
-    width: 20px;
-    height: 20px;
-    border-radius: 3px;
-    flex-shrink: 0;
+.agendamento-bar-item {
+    display: grid;
+    grid-template-columns: 180px 1fr 100px;
+    gap: 15px;
+    align-items: center;
+    padding: 10px 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #3498db;
+    transition: all 0.3s ease;
+}
+
+.agendamento-bar-item:hover {
+    background: #e8f4f8;
+    transform: translateX(5px);
+    box-shadow: 0 2px 8px rgba(52, 152, 219, 0.2);
+}
+
+.agendamento-bar-label {
+    font-weight: 700;
+    font-size: 0.95em;
+    color: #2c3e50;
+    text-transform: uppercase;
+}
+
+.agendamento-bar-wrapper {
+    position: relative;
+    height: 28px;
+    background: #e0e0e0;
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+.agendamento-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3498db 0%, #2980b9 100%);
+    border-radius: 14px;
+    transition: width 1s ease-out;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.agendamento-bar-value {
+    font-weight: 700;
+    font-size: 1.3em;
+    color: #2c3e50;
+    text-align: right;
+}
+
+.agendamento-total-card {
+    margin-top: 15px;
+    padding: 20px;
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    border-radius: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.agendamento-total-label {
+    font-weight: 800;
+    font-size: 1.2em;
+    color: white;
+    letter-spacing: 1px;
+}
+
+.agendamento-total-value {
+    font-weight: 800;
+    font-size: 2em;
+    color: #3498db;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .pie-legend-text {
