@@ -1068,26 +1068,11 @@
         async function enviarEmail() {
             const blob = await capturarRelatorioComoBlob();
             const nomeArquivo = `WH_Tower_Update_${new Date().toISOString().slice(0,10).replace(/-/g,'')}.png`;
-            const arquivo = new File([blob], nomeArquivo, { type: 'image/png' });
 
             const assunto = `Update Dock ${dataHojeBR()}`;
-            const corpo = `${saudacaoPorHora()},\n\nSegue a informação do dock:\n\n(Imagem em anexo)`;
+            const corpo = `${saudacaoPorHora()},\n\nSegue a informação do dock:\n\n(Imagem baixada automaticamente - anexar no e-mail)`;
 
-            // Tenta compartilhar com arquivo (quando suportado)
-            try {
-                if (navigator.canShare && navigator.canShare({ files: [arquivo] })) {
-                    await navigator.share({
-                        files: [arquivo],
-                        title: assunto,
-                        text: corpo
-                    });
-                    return;
-                }
-            } catch (e) {
-                console.warn('Share API falhou, usando mailto + download', e);
-            }
-
-            // Fallback: baixa a imagem e abre o mailto já preenchido
+            // Baixa a imagem automaticamente
             const link = document.createElement('a');
             link.download = nomeArquivo;
             link.href = URL.createObjectURL(blob);
@@ -1096,9 +1081,13 @@
             URL.revokeObjectURL(link.href);
             link.remove();
 
+            // Aguarda um pouco para garantir que o download iniciou
+            await new Promise(r => setTimeout(r, 500));
+
+            // Abre o Outlook com destinatários, assunto e corpo preenchidos
             const toList = EMAIL_TO.join(';');
             const ccList = EMAIL_CC.join(';');
-            const mailto = `mailto:${encodeURIComponent(toList)}?cc=${encodeURIComponent(ccList)}&subject=${encodeURIComponent(assunto)}&body=${encodeURIComponent(corpo)}`;
+            const mailto = `mailto:${toList}?cc=${ccList}&subject=${encodeURIComponent(assunto)}&body=${encodeURIComponent(corpo)}`;
             window.location.href = mailto;
         }
     </script>
