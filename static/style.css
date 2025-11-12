@@ -288,9 +288,23 @@ select:focus {
 /* Em modo de captura, garanta que nada mostre barras de rolagem */
 .capture-mode {
     overflow: hidden !important;
+    padding: 0 !important;            /* remove padding do body para não sobrar faixa */
 }
 .capture-mode #report-capture {
     overflow: hidden !important;
+}
+
+/* Durante a captura, o relatório ocupa 100% da largura da página */
+.capture-mode .results-section {
+    max-width: 100% !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+.capture-mode #report-capture {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
 .report-header {
