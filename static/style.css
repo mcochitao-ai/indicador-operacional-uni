@@ -422,15 +422,16 @@ select:focus {
 
 .cds-container {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 0;
+    /* força todos os anéis em uma única linha (8 CDs) */
+    grid-template-columns: repeat(8, 1fr);
+    gap: 12px;
     background: white;
     padding: 15px;
     border-top: 3px solid #e0e0e0;
 }
 
 .cd-card {
-    background: #f0f0f0;
+    background: #ffffff;
     border: 1px solid #d0d0d0;
     overflow: hidden;
     transition: all 0.3s ease;
@@ -450,9 +451,9 @@ select:focus {
 
 .chart-container {
     position: relative;
-    width: 120px;
-    height: 120px;
-    margin: 0 auto 12px;
+    width: 100px;
+    height: 100px;
+    margin: 0 auto 10px;
 }
 
 .chart-center-text {
@@ -464,13 +465,13 @@ select:focus {
 }
 
 .chart-percentage {
-    font-size: 1.6em;
+    font-size: 1.4em;
     font-weight: 700;
     color: #2c3e50;
 }
 
 .cd-name {
-    font-size: 0.95em;
+    font-size: 0.9em;
     font-weight: 700;
     color: #2c3e50;
     margin-bottom: 8px;
