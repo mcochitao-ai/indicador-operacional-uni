@@ -277,6 +277,14 @@ select:focus {
     margin: 0;
 }
 
+/* Modo de captura: desabilita animações/transições para evitar artefatos na imagem */
+.capture-mode *,
+.capture-mode *::before,
+.capture-mode *::after {
+    animation: none !important;
+    transition: none !important;
+}
+
 .report-header {
     background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
     color: white;

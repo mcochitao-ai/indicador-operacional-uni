@@ -902,11 +902,14 @@
         function baixarComoImagem() {
             const elemento = document.getElementById('report-capture');
             const botoes = document.querySelector('.action-buttons');
-            
-            // Esconder botões temporariamente
+            const body = document.body;
+
+            // Esconder botões temporariamente e desabilitar animações
             botoes.style.display = 'none';
-            
-            // Aguardar um pouco para garantir que tudo renderizou
+            body.classList.add('capture-mode');
+
+            // Aguardar para garantir que todos os gráficos terminaram de animar
+            const esperaMs = 1600; // tempo suficiente para Chart.js concluir animações
             setTimeout(() => {
                 // Configurações para melhor qualidade e captura completa
                 html2canvas(elemento, {
@@ -920,11 +923,18 @@
                     width: elemento.scrollWidth,
                     height: elemento.scrollHeight,
                     x: 0,
-                    y: 0
+                    y: 0,
+                    removeContainer: true,
+                    onclone: (doc) => {
+                        // Garante fundo branco na cópia
+                        const rc = doc.getElementById('report-capture');
+                        if (rc) rc.style.background = '#ffffff';
+                    }
                 }).then(canvas => {
-                    // Restaurar botões
+                    // Restaurar botões e animações
                     botoes.style.display = 'flex';
-                    
+                    body.classList.remove('capture-mode');
+
                     // Converter para imagem e baixar
                     const link = document.createElement('a');
                     const hoje = new Date();
@@ -934,10 +944,11 @@
                     link.click();
                 }).catch(error => {
                     botoes.style.display = 'flex';
+                    body.classList.remove('capture-mode');
                     alert('Erro ao gerar imagem: ' + error.message);
                     console.error('Erro detalhado:', error);
                 });
-            }, 300);
+            }, esperaMs);
         }
     </script>
 </body>
