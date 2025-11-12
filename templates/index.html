@@ -789,10 +789,14 @@
             const restante = Math.max(0, 100 - valor);
             
             // Definir cor baseada no valor
-            let cor = '#4CAF50'; // Verde
-            if (valor > 100) cor = '#8B0000'; // Vermelho escuro
-            else if (valor >= 90) cor = '#DC3545'; // Vermelho
-            else if (valor >= 70) cor = '#FFC107'; // Amarelo
+            // Critério pedido:
+            // 0–79,9 -> Verde | 80–99,9 -> Amarelo | 100+ -> Vermelho
+            let cor = '#4CAF50'; // Verde (<=79,9)
+            if (valor >= 100) {
+                cor = '#DC3545'; // Vermelho
+            } else if (valor >= 80) {
+                cor = '#FFC107'; // Amarelo
+            }
             
             new Chart(ctx, {
                 type: 'doughnut',
@@ -835,9 +839,9 @@
 
         function getCapacidadeClass(valor) {
             if (valor === null || valor === undefined) return '';
-            if (valor > 100) return 'alert-critical';
-            if (valor >= 90) return 'alert-danger';
-            if (valor >= 70) return 'alert-warning';
+            // Alinhar com o mesmo critério de cores (se for usado em algum lugar)
+            if (valor >= 100) return 'alert-critical';
+            if (valor >= 80) return 'alert-warning';
             return 'alert-success';
         }
 
@@ -861,8 +865,9 @@
 
         function getMetricClass(valor) {
             if (valor === null || valor === undefined) return '';
-            if (valor > 100) return 'metric-critical';
-            if (valor >= 90) return 'metric-danger';
+            // 100+ vermelho (crítico), 80–99,9 amarelo/laranja, abaixo de 80 neutro
+            if (valor >= 100) return 'metric-critical';
+            if (valor >= 80) return 'metric-danger';
             return '';
         }
 
