@@ -1066,48 +1066,29 @@
         }
 
         async function enviarEmail() {
-            try {
-                // Mostrar indicador de carregamento
-                const btn = event.target.closest('button');
-                const originalText = btn.innerHTML;
-                btn.disabled = true;
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+            const blob = await capturarRelatorioComoBlob();
+            const nomeArquivo = `WH_Tower_Update_${new Date().toISOString().slice(0,10).replace(/-/g,'')}.png`;
 
-                const blob = await capturarRelatorioComoBlob();
-                
-                // Converter blob para base64
-                const reader = new FileReader();
-                const base64Promise = new Promise((resolve) => {
-                    reader.onloadend = () => resolve(reader.result);
-                    reader.readAsDataURL(blob);
-                });
-                const imageBase64 = await base64Promise;
+            const assunto = `Update Dock ${dataHojeBR()}`;
+            const corpo = `${saudacaoPorHora()},\n\nSegue a informação do dock:\n\n(Anexar a imagem baixada)`;
 
-                // Enviar para o backend
-                const response = await fetch('/enviar_email', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ image: imageBase64 })
-                });
+            // Baixa a imagem automaticamente
+            const link = document.createElement('a');
+            link.download = nomeArquivo;
+            link.href = URL.createObjectURL(blob);
+            document.body.appendChild(link);
+            link.click();
+            URL.revokeObjectURL(link.href);
+            link.remove();
 
-                const result = await response.json();
+            // Aguarda um pouco para garantir que o download iniciou
+            await new Promise(r => setTimeout(r, 500));
 
-                if (result.success) {
-                    alert('✓ E-mail enviado com sucesso!');
-                } else {
-                    alert('✗ Erro ao enviar e-mail: ' + (result.error || 'Erro desconhecido'));
-                }
-
-                btn.disabled = false;
-                btn.innerHTML = originalText;
-            } catch (error) {
-                alert('✗ Erro ao enviar e-mail: ' + error.message);
-                const btn = event.target.closest('button');
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-envelope"></i> Enviar E-mail';
-            }
+            // Abre o Outlook com destinatários, assunto e corpo preenchidos
+            const toList = EMAIL_TO.join(';');
+            const ccList = EMAIL_CC.join(';');
+            const mailto = `mailto:${toList}?cc=${ccList}&subject=${encodeURIComponent(assunto)}&body=${encodeURIComponent(corpo)}`;
+            window.location.href = mailto;
         }
     </script>
  </body>
