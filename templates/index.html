@@ -122,6 +122,9 @@
                 <button onclick="baixarComoImagem()" class="btn-primary" style="max-width: 300px; margin: 0 10px;">
                     <i class="fas fa-camera"></i> Baixar como Imagem
                 </button>
+                <button onclick="enviarEmail()" class="btn-primary" style="max-width: 300px; margin: 0 10px;">
+                    <i class="fas fa-envelope"></i> Enviar E-mail
+                </button>
                 <button onclick="location.reload()" class="btn-secondary">
                     <i class="fas fa-redo"></i> Nova Análise
                 </button>
@@ -979,6 +982,125 @@
                 });
             }, esperaMs);
         }
+        const EMAIL_TO = [
+            'Diego.Appolari@unilever.com',
+            'Andre.Martinato@unilever.com',
+            'Guilherme.Frigo@unilever.com',
+            'Cristiano.Felten@unilever.com'
+        ];
+        const EMAIL_CC = [
+            'Michel.Lopes@unilever.com','Edson.Filgueiras@unilever.com','Merquides.Guimaraes@unilever.com','Gilson.Lima@unilever.com','Jonas.Olivatto@unilever.com','Evelyn.Missio@unilever.com','Wagner.Correa@unilever.com','Thiago.Roque@unilever.com','Clayton.Scodeler@unilever.com','Simoni.Serafim@unilever.com','Geise.Silva@unilever.com','Telma.Silva@unilever.com','Diego.Soaress@unilever.com','Kananda.Gouvea@unilever.com','Cleber.Rizzo@unilever.com','Denicielle.Otaviano@unilever.com','Leandro.Neves@unilever.com','Marcos.Felix@unilever.com','Claudio.Marques@unilever.com','WENDELL.COSTA-DUARTE@unilever.com','Diego.Sousa@unilever.com','Renato.Segli@unilever.com','Brunna.Arruda@unilever.com','Carolina.Ouno@unilever.com','Pedro.Nobre@unilever.com','Celso.Leitao@unilever.com','Felipe.Lobo@unilever.com','Renata.Azevedo@unilever.com','Rafael.Ribeiro@unilever.com','Tamires.Turatti@unilever.com'
+        ];
+
+        function saudacaoPorHora() {
+            const h = new Date().getHours();
+            if (h < 12) return 'Bom dia';
+            if (h < 18) return 'Boa tarde';
+            return 'Boa noite';
+        }
+
+        function dataHojeBR() {
+            const d = new Date();
+            const dd = String(d.getDate()).padStart(2, '0');
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const yyyy = d.getFullYear();
+            return `${dd}/${mm}/${yyyy}`;
+        }
+
+        async function capturarRelatorioComoBlob() {
+            const elemento = document.getElementById('report-capture');
+            const botoes = document.querySelector('.action-buttons');
+            const body = document.body;
+            const html = document.documentElement;
+
+            botoes.style.display = 'none';
+            body.classList.add('capture-mode');
+
+            const prevHtmlOverflow = html.style.overflow;
+            const prevBodyOverflow = body.style.overflow;
+            const prevElemOverflow = elemento.style.overflow;
+            html.style.overflow = 'hidden';
+            body.style.overflow = 'hidden';
+            elemento.style.overflow = 'hidden';
+
+            // aguarda charts concluirem
+            const esperaMs = 1600;
+            await new Promise(r => setTimeout(r, esperaMs));
+
+            const targetWidth = elemento.clientWidth;
+            const targetHeight = elemento.scrollHeight;
+
+            try {
+                const canvas = await html2canvas(elemento, {
+                    scale: 3,
+                    backgroundColor: '#ffffff',
+                    logging: false,
+                    useCORS: true,
+                    allowTaint: true,
+                    windowWidth: targetWidth,
+                    windowHeight: targetHeight,
+                    width: targetWidth,
+                    height: targetHeight,
+                    x: 0,
+                    y: 0,
+                    removeContainer: true,
+                    onclone: (doc) => {
+                        const rc = doc.getElementById('report-capture');
+                        if (rc) {
+                            rc.style.background = '#ffffff';
+                            rc.style.overflow = 'hidden';
+                        }
+                        doc.documentElement.style.overflow = 'hidden';
+                        doc.body.style.overflow = 'hidden';
+                    }
+                });
+
+                return await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 1.0));
+            } finally {
+                botoes.style.display = 'flex';
+                body.classList.remove('capture-mode');
+                html.style.overflow = prevHtmlOverflow;
+                body.style.overflow = prevBodyOverflow;
+                elemento.style.overflow = prevElemOverflow;
+            }
+        }
+
+        async function enviarEmail() {
+            const blob = await capturarRelatorioComoBlob();
+            const nomeArquivo = `WH_Tower_Update_${new Date().toISOString().slice(0,10).replace(/-/g,'')}.png`;
+            const arquivo = new File([blob], nomeArquivo, { type: 'image/png' });
+
+            const assunto = `Update Dock ${dataHojeBR()}`;
+            const corpo = `${saudacaoPorHora()},\n\nSegue a informação do dock:\n\n(Imagem em anexo)`;
+
+            // Tenta compartilhar com arquivo (quando suportado)
+            try {
+                if (navigator.canShare && navigator.canShare({ files: [arquivo] })) {
+                    await navigator.share({
+                        files: [arquivo],
+                        title: assunto,
+                        text: corpo
+                    });
+                    return;
+                }
+            } catch (e) {
+                console.warn('Share API falhou, usando mailto + download', e);
+            }
+
+            // Fallback: baixa a imagem e abre o mailto já preenchido
+            const link = document.createElement('a');
+            link.download = nomeArquivo;
+            link.href = URL.createObjectURL(blob);
+            document.body.appendChild(link);
+            link.click();
+            URL.revokeObjectURL(link.href);
+            link.remove();
+
+            const toList = EMAIL_TO.join(';');
+            const ccList = EMAIL_CC.join(';');
+            const mailto = `mailto:${encodeURIComponent(toList)}?cc=${encodeURIComponent(ccList)}&subject=${encodeURIComponent(assunto)}&body=${encodeURIComponent(corpo)}`;
+            window.location.href = mailto;
+        }
     </script>
-</body>
-</html>
+ </body>
+ </html>
