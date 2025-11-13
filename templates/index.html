@@ -86,36 +86,36 @@
                     <p class="report-date" id="report-date"></p>
                 </div>
 
-                <!-- Subtítulo -->
+                <!-- 1. VOLUME X CAPACIDADES (TONS) -->
                 <div class="section-title">
                     <h2><i class="fas fa-boxes"></i> VOLUME X CAPACIDADES (TONS)</h2>
                 </div>
                 
                 <div id="cds-container" class="cds-container"></div>
                 
-                <!-- Agendamentos -->
+                <!-- 2. BACKLOG -->
                 <div class="section-title" style="margin-top: 20px;">
-                    <h2><i class="fas fa-calendar-check"></i> AGENDAMENTOS</h2>
+                    <h2><i class="fas fa-exclamation-triangle"></i> BACKLOG</h2>
                 </div>
-                <div id="agendamentos-container" class="agendamentos-container"></div>
+                <div id="aderencia-container" class="aderencia-container"></div>
                 
-                <!-- Seção Dock Vendas -->
+                <!-- 3. DOCK VENDAS PARA FATURAMENTO -->
                 <div class="section-title" style="margin-top: 20px;">
                     <h2><i class="fas fa-truck-loading"></i> DOCK VENDAS PARA FATURAMENTO</h2>
                 </div>
                 <div id="dock-container" class="dock-container"></div>
                 
-                <!-- Seção Dock Total -->
+                <!-- 4. DOCK TOTAL -->
                 <div class="section-title" style="margin-top: 20px;">
                     <h2><i class="fas fa-warehouse"></i> DOCK TOTAL</h2>
                 </div>
                 <div id="dock-total-container" class="dock-total-container"></div>
                 
-                <!-- Aderência (Backlog/Perdas) -->
+                <!-- 5. AGENDAMENTOS -->
                 <div class="section-title" style="margin-top: 20px;">
-                    <h2><i class="fas fa-exclamation-triangle"></i> BACKLOG</h2>
+                    <h2><i class="fas fa-calendar-check"></i> AGENDAMENTOS</h2>
                 </div>
-                <div id="aderencia-container" class="aderencia-container"></div>
+                <div id="agendamentos-container" class="agendamentos-container"></div>
             </div>
             
             <div class="action-buttons">
@@ -253,8 +253,8 @@
             // Exibir Dock Vendas
             exibirDockVendas(dados.cds);
             
-            // Exibir Aderência
-            exibirAderencia(dados.perdas);
+            // Exibir Backlog
+            exibirBacklog(dados.cds);
             
             // Exibir Dock Total
             exibirDockTotal(dados.cds);
@@ -273,8 +273,15 @@
             const table = document.createElement('table');
             table.className = 'agendamentos-table';
             
-            // Corpo da tabela com os CDs
-            cds.forEach((cd, index) => {
+            // Ordenar CDs do menor para o maior valor de agendamentos
+            const cdsOrdenados = [...cds].sort((a, b) => {
+                const valorA = a.agendamentos || 0;
+                const valorB = b.agendamentos || 0;
+                return valorA - valorB;
+            });
+            
+            // Corpo da tabela com os CDs ordenados
+            cdsOrdenados.forEach((cd, index) => {
                 const valor = cd.agendamentos || 0;
                 const row = document.createElement('tr');
                 row.innerHTML = `
@@ -296,45 +303,49 @@
             container.appendChild(table);
         }
 
-        function exibirAderencia(perdas) {
+        function exibirBacklog(cds) {
             const container = document.getElementById('aderencia-container');
             container.innerHTML = '';
             
-            if (!perdas || perdas.length === 0) {
+            if (!cds || cds.length === 0) {
                 container.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">Sem dados de backlog</div>';
                 return;
             }
             
-            let totalBacklog = 0;
+            let totalBacklogGeral = 0;
+            let totalBacklogVendas = 0;
+            let totalBacklogTransferencias = 0;
             
-            perdas.forEach((perda, index) => {
+            cds.forEach((cd, index) => {
                 const card = document.createElement('div');
                 card.className = 'dock-total-card';
                 
-                const backlog = perda.backlog || 0;
-                const perdasW = perda.perda_w || 0;
-                const perdasT = perda.perda_t || 0;
+                const backlogVendas = cd.backlog_vendas || 0;
+                const backlogTransferencias = cd.backlog_transferencias || 0;
+                const backlogTotal = cd.backlog_total || 0;
                 
-                totalBacklog += backlog;
+                totalBacklogGeral += backlogTotal;
+                totalBacklogVendas += backlogVendas;
+                totalBacklogTransferencias += backlogTransferencias;
                 
                 card.innerHTML = `
                     <div class="dock-total-header">
-                        <div class="dock-total-value-top">${formatarNumeroInteiro(backlog)}</div>
-                        <div class="dock-total-name">${perda.nome}</div>
+                        <div class="dock-total-value-top">${formatarNumeroInteiro(backlogTotal)}</div>
+                        <div class="dock-total-name">${cd.nome}</div>
                     </div>
                     <div class="dock-total-chart">
                         <canvas id="backlog-chart-${index}"></canvas>
                     </div>
                     <div class="dock-total-legend">
                         <div class="legend-item">
-                            <span class="legend-color" style="background: #e74c3c;"></span>
-                            <span class="legend-text">Perdas W</span>
-                            <span class="legend-value">${formatarNumeroInteiro(perdasW)}</span>
+                            <span class="legend-color" style="background: #c0392b;"></span>
+                            <span class="legend-text">Vendas</span>
+                            <span class="legend-value">${formatarNumeroInteiro(backlogVendas)}</span>
                         </div>
                         <div class="legend-item">
-                            <span class="legend-color" style="background: #e67e22;"></span>
-                            <span class="legend-text">Perdas T</span>
-                            <span class="legend-value">${formatarNumeroInteiro(perdasT)}</span>
+                            <span class="legend-color" style="background: #f39c12;"></span>
+                            <span class="legend-text">Transferências</span>
+                            <span class="legend-value">${formatarNumeroInteiro(backlogTransferencias)}</span>
                         </div>
                     </div>
                 `;
@@ -342,45 +353,37 @@
                 container.appendChild(card);
                 
                 // Criar gráfico de barras
-                setTimeout(() => createBacklogChart(`backlog-chart-${index}`, perdasW, perdasT), 100);
+                setTimeout(() => createBacklogChart(`backlog-chart-${index}`, backlogVendas, backlogTransferencias), 100);
             });
             
-            // Adicionar card de total geral
+            // Adicionar card de total Brasil
             const totalGeralCard = document.createElement('div');
             totalGeralCard.className = 'dock-total-card dock-card-total-geral';
             
-            // Calcular totais de perdas W e T
-            let totalPerdasW = 0;
-            let totalPerdasT = 0;
-            perdas.forEach(p => {
-                totalPerdasW += p.perda_w || 0;
-                totalPerdasT += p.perda_t || 0;
-            });
-            
             totalGeralCard.innerHTML = `
-                <div class="dock-total-header" style="background: #e74c3c; color: white;">
-                    <div class="dock-total-value-top" style="color: white;">${formatarNumeroInteiro(totalBacklog)}</div>
-                    <div class="dock-total-name" style="color: white;">TOTAL GERAL</div>
+                <div class="dock-total-header" style="background: #c0392b; color: white;">
+                    <div class="dock-total-value-top" style="color: white;">${formatarNumeroInteiro(totalBacklogGeral)}</div>
+                    <div class="dock-total-name" style="color: white;">TOTAL BRASIL</div>
                 </div>
                 <div class="dock-total-chart">
                     <canvas id="backlog-chart-total"></canvas>
                 </div>
                 <div class="dock-total-legend">
                     <div class="legend-item">
-                        <span class="legend-color" style="background: #e74c3c;"></span>
-                        <span class="legend-text">Perdas W</span>
-                        <span class="legend-value">${formatarNumeroInteiro(totalPerdasW)}</span>
+                        <span class="legend-color" style="background: #c0392b;"></span>
+                        <span class="legend-text">Vendas</span>
+                        <span class="legend-value">${formatarNumeroInteiro(totalBacklogVendas)}</span>
                     </div>
                     <div class="legend-item">
-                        <span class="legend-color" style="background: #e67e22;"></span>
-                        <span class="legend-text">Perdas T</span>
-                        <span class="legend-value">${formatarNumeroInteiro(totalPerdasT)}</span>
+                        <span class="legend-color" style="background: #f39c12;"></span>
+                        <span class="legend-text">Transferências</span>
+                        <span class="legend-value">${formatarNumeroInteiro(totalBacklogTransferencias)}</span>
                     </div>
                 </div>
             `;
             
             container.appendChild(totalGeralCard);
-            setTimeout(() => createBacklogChart('backlog-chart-total', totalPerdasW, totalPerdasT), 100);
+            setTimeout(() => createBacklogChart('backlog-chart-total', totalBacklogVendas, totalBacklogTransferencias), 100);
         }
 
         function createBacklogChart(canvasId, perdasW, perdasT) {
@@ -395,14 +398,14 @@
                         {
                             label: 'Perdas W',
                             data: [perdasW],
-                            backgroundColor: '#e74c3c',
+                            backgroundColor: '#c0392b',
                             borderWidth: 0,
                             borderRadius: 4
                         },
                         {
                             label: 'Perdas T',
                             data: [perdasT],
-                            backgroundColor: '#e67e22',
+                            backgroundColor: '#f39c12',
                             borderWidth: 0,
                             borderRadius: 4
                         }
@@ -506,7 +509,7 @@
             totalGeralCard.innerHTML = `
                 <div class="dock-total-header" style="background: #27ae60; color: white;">
                     <div class="dock-total-value-top" style="color: white;">${formatarNumeroInteiro(totalGeral)}</div>
-                    <div class="dock-total-name" style="color: white;">TOTAL GERAL</div>
+                    <div class="dock-total-name" style="color: white;">TOTAL BRASIL</div>
                 </div>
                 <div class="dock-total-chart">
                     <canvas id="dock-vendas-chart-total"></canvas>
@@ -518,7 +521,7 @@
                         <span class="legend-value">${formatarNumeroInteiro(totalGeralProgramacao)}</span>
                     </div>
                     <div class="legend-item">
-                        <span class="legend-color" style="background: #27ae60;"></span>
+                        <span class="legend-color" style="background: #95a5a6;"></span>
                         <span class="legend-text">Inclusão</span>
                         <span class="legend-value">${formatarNumeroInteiro(totalGeralInclusao)}</span>
                     </div>
@@ -548,7 +551,7 @@
                         {
                             label: 'Inclusão',
                             data: [inclusao],
-                            backgroundColor: '#27ae60',
+                            backgroundColor: '#95a5a6',
                             borderWidth: 0,
                             borderRadius: 4
                         }
@@ -644,7 +647,7 @@
             totalGeralCard.innerHTML = `
                 <div class="dock-total-header" style="background: #3498db; color: white;">
                     <div class="dock-total-value-top" style="color: white;">${formatarNumeroInteiro(totalGeral)}</div>
-                    <div class="dock-total-name" style="color: white;">TOTAL GERAL</div>
+                    <div class="dock-total-name" style="color: white;">TOTAL BRASIL</div>
                 </div>
                 <div class="dock-total-chart">
                     <canvas id="dock-chart-total"></canvas>

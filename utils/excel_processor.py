@@ -64,6 +64,9 @@ def processar_capacidade(filepath, dia):
             # Agendamentos: AB
             agendamentos = ws[f'AB{row}'].value
             
+            # Backlog de Transferências: S (linhas 4-11)
+            backlog_transferencias = ws[f'S{row}'].value
+            
             # Calcular capacidade geral (sempre será X/C * 100)
             capacidade_geral = None
             if valor_x is not None and valor_c is not None and valor_c != 0:
@@ -159,6 +162,14 @@ def processar_capacidade(filepath, dia):
                 except (ValueError, TypeError):
                     agendamentos_formatado = 0
             
+            # Backlog de Transferências formatado
+            backlog_transferencias_formatado = 0
+            if backlog_transferencias is not None:
+                try:
+                    backlog_transferencias_formatado = float(backlog_transferencias)
+                except (ValueError, TypeError):
+                    backlog_transferencias_formatado = 0
+            
             cd_data = {
                 'nome': cd_nome,
                 'capacidade_geral': capacidade_geral,
@@ -171,13 +182,14 @@ def processar_capacidade(filepath, dia):
                 'dock_total_vendas': dock_total_vendas,
                 'dock_total_transferencias': dock_total_transferencias,
                 'dock_total_geral': dock_total_geral,
-                'agendamentos': agendamentos_formatado
+                'agendamentos': agendamentos_formatado,
+                'backlog_transferencias': backlog_transferencias_formatado
             }
             
             cds.append(cd_data)
         
         # Extrair Perdas W e T (linhas 16 a 23, colunas G e H)
-        # Usar os mesmos nomes dos CDs já extraídos
+        # E adicionar backlog_vendas e backlog_total aos CDs
         perdas = []
         for idx, cd in enumerate(cds):
             row = 16 + idx  # linha 16 corresponde ao primeiro CD, 17 ao segundo, etc.
@@ -200,13 +212,21 @@ def processar_capacidade(filepath, dia):
                 except (ValueError, TypeError):
                     perda_t_formatada = 0
             
-            backlog = perda_w_formatada + perda_t_formatada
+            # Backlog de vendas = Perdas W + Perdas T
+            backlog_vendas = perda_w_formatada + perda_t_formatada
+            
+            # Backlog total = Backlog de vendas + Backlog de transferências
+            backlog_total = backlog_vendas + cd['backlog_transferencias']
+            
+            # Adicionar backlog_vendas e backlog_total ao CD
+            cd['backlog_vendas'] = backlog_vendas
+            cd['backlog_total'] = backlog_total
             
             perda_data = {
                 'nome': cd['nome'],
                 'perda_w': perda_w_formatada,
                 'perda_t': perda_t_formatada,
-                'backlog': backlog
+                'backlog': backlog_vendas  # Manter compatibilidade
             }
             
             perdas.append(perda_data)
