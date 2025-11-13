@@ -269,31 +269,31 @@
                 totalAgendamentos += cd.agendamentos || 0;
             });
             
-            // Criar barras horizontais para cada CD
+            // Criar mini tabela compacta
+            const table = document.createElement('table');
+            table.className = 'agendamentos-table';
+            
+            // Corpo da tabela com os CDs
             cds.forEach((cd, index) => {
                 const valor = cd.agendamentos || 0;
-                const percentual = totalAgendamentos > 0 ? (valor / totalAgendamentos * 100) : 0;
-                
-                const barItem = document.createElement('div');
-                barItem.className = 'agendamento-bar-item';
-                barItem.innerHTML = `
-                    <div class="agendamento-bar-label">${cd.nome}</div>
-                    <div class="agendamento-bar-wrapper">
-                        <div class="agendamento-bar-fill" style="width: ${percentual}%"></div>
-                    </div>
-                    <div class="agendamento-bar-value">${formatarNumeroInteiro(valor)}</div>
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="agendamento-cd-name">${cd.nome}</td>
+                    <td class="agendamento-cd-value">${formatarNumeroInteiro(valor)}</td>
                 `;
-                container.appendChild(barItem);
+                table.appendChild(row);
             });
             
-            // Adicionar card de total
-            const totalCard = document.createElement('div');
-            totalCard.className = 'agendamento-total-card';
-            totalCard.innerHTML = `
-                <div class="agendamento-total-label">TOTAL GERAL</div>
-                <div class="agendamento-total-value">${formatarNumeroInteiro(totalAgendamentos)}</div>
+            // Linha de total
+            const totalRow = document.createElement('tr');
+            totalRow.className = 'agendamento-total-row';
+            totalRow.innerHTML = `
+                <td class="agendamento-cd-name">TOTAL</td>
+                <td class="agendamento-cd-value">${formatarNumeroInteiro(totalAgendamentos)}</td>
             `;
-            container.appendChild(totalCard);
+            table.appendChild(totalRow);
+            
+            container.appendChild(table);
         }
 
         function exibirAderencia(perdas) {
