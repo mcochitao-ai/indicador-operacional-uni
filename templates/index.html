@@ -801,6 +801,9 @@
             if (statusLower === 'aberto' || statusLower === 'sim' || statusLower === 's') {
                 return 'status-open';
             }
+            if (statusLower === 'em analise' || statusLower === 'em análise' || statusLower === 'analise' || statusLower === 'análise') {
+                return 'status-analise';
+            }
             return 'status-closed';
         }
 
@@ -809,6 +812,9 @@
             const statusLower = status.toString().toLowerCase();
             if (statusLower === 'aberto' || statusLower === 'sim' || statusLower === 's') {
                 return '✓ ABERTO';
+            }
+            if (statusLower === 'em analise' || statusLower === 'em análise' || statusLower === 'analise' || statusLower === 'análise') {
+                return '⚠ EM ANÁLISE';
             }
             return '✗ SEM OPORTUNIDADE';
         }
@@ -974,12 +980,13 @@
             const esperaMs = 1600;
             await new Promise(r => setTimeout(r, esperaMs));
 
-            const targetWidth = elemento.clientWidth;
+            // Forçar largura máxima para exportação
+            const targetWidth = 1800;
             const targetHeight = elemento.scrollHeight;
 
             try {
                 const canvas = await html2canvas(elemento, {
-                    scale: 3,
+                    scale: 4,
                     backgroundColor: '#ffffff',
                     logging: false,
                     useCORS: true,

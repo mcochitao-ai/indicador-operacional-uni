@@ -258,12 +258,12 @@ select:focus {
     20%, 40%, 60%, 80% { transform: translateX(5px); }
 }
 
-.results-section {
+#results, .results-section {
     background: white;
     border-radius: 20px;
     padding: 0;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-    max-width: 1200px; /* reduz para equilibrar quantidade de colunas e evitar faixas vazias */
+    max-width: 1600px; /* aumenta ainda mais para exportação maior */
     margin: 30px auto;
     overflow: hidden;
     animation: fadeIn 0.5s ease-out;
@@ -274,7 +274,7 @@ select:focus {
     width: 100%;
     min-height: 100%;
     padding: 0;
-    margin: 0;
+    margin: 0 auto;
 }
 
 /* Modo de captura: desabilita animações/transições para evitar artefatos na imagem */
@@ -527,6 +527,12 @@ select:focus {
     background: #27ae60;
     color: white;
     box-shadow: 0 2px 5px rgba(39, 174, 96, 0.3);
+}
+
+.status-analise {
+    background: #f39c12;
+    color: white;
+    box-shadow: 0 2px 5px rgba(243, 156, 18, 0.3);
 }
 
 .status-closed {
