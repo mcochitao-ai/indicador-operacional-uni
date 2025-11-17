@@ -36,11 +36,11 @@ def processar_capacidade(filepath, dia):
             valor_x = ws[f'X{row}'].value
             valor_c = ws[f'C{row}'].value
             
-            # Capacidade de pallet: AH
-            capacidade_pallet = ws[f'AH{row}'].value
+            # Capacidade de pallet: AM (invertido - estava AH)
+            capacidade_pallet = ws[f'AM{row}'].value
             
-            # Capacidade de caixas: AM
-            capacidade_caixas = ws[f'AM{row}'].value
+            # Capacidade de caixas: AH (invertido - estava AM)
+            capacidade_caixas = ws[f'AH{row}'].value
             
             # Status de abertura para inclusão: Y
             status_inclusao = ws[f'Y{row}'].value
