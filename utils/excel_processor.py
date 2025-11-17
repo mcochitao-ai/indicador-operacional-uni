@@ -45,6 +45,12 @@ def processar_capacidade(filepath, dia):
             # Status de abertura para inclusão: Y
             status_inclusao = ws[f'Y{row}'].value
             
+            # Status de abertura para caixas: Z
+            status_caixas = ws[f'Z{row}'].value
+            
+            # Status de abertura para pallets: AA
+            status_pallets = ws[f'AA{row}'].value
+            
             # Dock Vendas para Faturamento: D
             dock_vendas = ws[f'D{row}'].value
             
@@ -176,6 +182,8 @@ def processar_capacidade(filepath, dia):
                 'capacidade_pallet': cap_pallet_formatada,
                 'capacidade_caixas': cap_caixas_formatada,
                 'status_inclusao': status_inclusao,
+                'status_caixas': status_caixas,
+                'status_pallets': status_pallets,
                 'dock_vendas': dock_vendas_formatado,
                 'inclusao': inclusao_formatada,
                 'total_com_inclusao': total_com_inclusao,

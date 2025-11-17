@@ -227,11 +227,11 @@
                         </div>
                         <div class="cd-metrics">
                             <div class="metric-row">
-                                <span class="metric-label">CAIXA</span>
+                                <span class="metric-label">CAIXA ${getStatusIcon(cd.status_caixas)}</span>
                                 <span class="metric-value ${getMetricClass(cd.capacidade_caixas)}">${formatarValor(cd.capacidade_caixas, '%')}</span>
                             </div>
                             <div class="metric-row">
-                                <span class="metric-label">PALETE</span>
+                                <span class="metric-label">PALETE ${getStatusIcon(cd.status_pallets)}</span>
                                 <span class="metric-value ${getMetricClass(cd.capacidade_pallet)}">${formatarValor(cd.capacidade_pallet, '%')}</span>
                             </div>
                         </div>
@@ -817,6 +817,15 @@
                 return '⚠ EM ANÁLISE';
             }
             return '✗ SEM OPORTUNIDADE';
+        }
+
+        function getStatusIcon(status) {
+            if (!status) return '';
+            const statusLower = status.toString().toLowerCase();
+            if (statusLower === 'aberto' || statusLower === 'sim' || statusLower === 's') {
+                return '<span class="status-icon status-icon-open">✓</span>';
+            }
+            return '<span class="status-icon status-icon-closed">✗</span>';
         }
 
         function getMetricClass(valor) {
