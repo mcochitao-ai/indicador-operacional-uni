@@ -1058,59 +1058,41 @@
         }
 
         async function baixarReuniaoOperacional() {
-            // Capturar apenas a seção de Volume x Capacidades (título + cards dos CDs)
-            const reportHeader = document.querySelector('.report-header');
-            const sectionTitle = document.querySelectorAll('.section-title')[0];
-            const cdsContainer = document.getElementById('cds-container');
+            // Encontrar o elemento que contém tudo que queremos capturar
+            const reportCapture = document.getElementById('report-capture');
             
-            if (!reportHeader || !sectionTitle || !cdsContainer) {
-                alert('Erro: Seção não encontrada');
+            if (!reportCapture) {
+                alert('Erro: Relatório não encontrado');
                 return;
             }
 
-            // Criar wrapper temporário apenas para posicionamento
-            const tempWrapper = document.createElement('div');
-            tempWrapper.style.cssText = `
-                position: fixed;
-                left: 0;
-                top: 0;
-                width: 1920px;
-                background: white;
-                padding: 0;
-                z-index: 99999;
-            `;
+            // Ocultar temporariamente as seções que não queremos
+            const allSections = reportCapture.querySelectorAll('.section-title');
+            const sectionsToHide = [];
             
-            // Mover elementos originais para o wrapper (não clonar, para preservar os canvas)
-            const originalParentHeader = reportHeader.parentNode;
-            const originalParentTitle = sectionTitle.parentNode;
-            const originalParentCds = cdsContainer.parentNode;
-            
-            tempWrapper.appendChild(reportHeader);
-            tempWrapper.appendChild(sectionTitle);
-            tempWrapper.appendChild(cdsContainer);
-            
-            document.body.appendChild(tempWrapper);
+            // Ocultar todas as seções exceto a primeira (Volume x Capacidades)
+            for (let i = 1; i < allSections.length; i++) {
+                const section = allSections[i];
+                const nextElement = section.nextElementSibling;
+                sectionsToHide.push({ title: section, content: nextElement });
+                section.style.display = 'none';
+                if (nextElement) nextElement.style.display = 'none';
+            }
 
-            // Aguardar renderização
-            await new Promise(r => setTimeout(r, 1000));
+            // Aguardar um momento
+            await new Promise(r => setTimeout(r, 500));
 
             try {
-                // Capturar com html2canvas
-                const canvas = await html2canvas(tempWrapper, {
+                // Capturar apenas o que está visível
+                const canvas = await html2canvas(reportCapture, {
                     scale: 4,
                     backgroundColor: '#ffffff',
                     logging: false,
                     useCORS: true,
                     allowTaint: true,
-                    width: tempWrapper.scrollWidth,
-                    height: tempWrapper.scrollHeight
+                    width: reportCapture.scrollWidth,
+                    height: reportCapture.scrollHeight
                 });
-
-                // Restaurar elementos às posições originais
-                originalParentHeader.insertBefore(reportHeader, originalParentHeader.firstChild);
-                originalParentTitle.parentNode.insertBefore(sectionTitle, originalParentTitle.firstChild);
-                originalParentCds.appendChild(cdsContainer);
-                document.body.removeChild(tempWrapper);
 
                 // Converter para blob e baixar
                 const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 1.0));
@@ -1123,15 +1105,12 @@
                 link.click();
                 URL.revokeObjectURL(link.href);
                 link.remove();
-            } catch (error) {
-                // Em caso de erro, restaurar elementos
-                if (tempWrapper.parentNode) {
-                    if (tempWrapper.contains(reportHeader)) originalParentHeader.insertBefore(reportHeader, originalParentHeader.firstChild);
-                    if (tempWrapper.contains(sectionTitle)) originalParentTitle.insertBefore(sectionTitle, originalParentTitle.firstChild);
-                    if (tempWrapper.contains(cdsContainer)) originalParentCds.appendChild(cdsContainer);
-                    document.body.removeChild(tempWrapper);
-                }
-                alert('Erro ao capturar imagem: ' + error.message);
+            } finally {
+                // Restaurar visibilidade de todas as seções
+                sectionsToHide.forEach(item => {
+                    item.title.style.display = '';
+                    if (item.content) item.content.style.display = '';
+                });
             }
         }
     </script>
