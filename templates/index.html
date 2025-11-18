@@ -1058,7 +1058,6 @@
         }
 
         async function baixarReuniaoOperacional() {
-            // Encontrar o elemento que contém tudo que queremos capturar
             const reportCapture = document.getElementById('report-capture');
             
             if (!reportCapture) {
@@ -1066,32 +1065,63 @@
                 return;
             }
 
-            // Ocultar temporariamente as seções que não queremos
-            const allSections = reportCapture.querySelectorAll('.section-title');
-            const sectionsToHide = [];
-            
-            // Ocultar todas as seções exceto a primeira (Volume x Capacidades)
-            for (let i = 1; i < allSections.length; i++) {
-                const section = allSections[i];
-                const nextElement = section.nextElementSibling;
-                sectionsToHide.push({ title: section, content: nextElement });
-                section.style.display = 'none';
-                if (nextElement) nextElement.style.display = 'none';
+            // Encontrar o header, título e a primeira seção (Volume x Capacidades)
+            const header = reportCapture.querySelector('.report-header');
+            const title = reportCapture.querySelector('.report-title');
+            const firstSection = reportCapture.querySelector('.section-title');
+            const firstContent = firstSection ? firstSection.nextElementSibling : null;
+
+            if (!firstSection || !firstContent) {
+                alert('Erro: Seção Volume x Capacidades não encontrada');
+                return;
             }
 
-            // Aguardar um momento
-            await new Promise(r => setTimeout(r, 500));
+            // Criar container temporário para captura
+            const tempContainer = document.createElement('div');
+            tempContainer.style.cssText = `
+                position: fixed;
+                top: -10000px;
+                left: 0;
+                width: ${reportCapture.scrollWidth}px;
+                background: white;
+                padding: 40px;
+            `;
+
+            // Adicionar os elementos ao container temporário
+            if (header) tempContainer.appendChild(header.cloneNode(true));
+            if (title) tempContainer.appendChild(title.cloneNode(true));
+            tempContainer.appendChild(firstSection.cloneNode(true));
+            
+            // Clonar o conteúdo da primeira seção incluindo os gráficos
+            const contentClone = firstContent.cloneNode(true);
+            tempContainer.appendChild(contentClone);
+            
+            // Adicionar ao body
+            document.body.appendChild(tempContainer);
+
+            // Aguardar renderização
+            await new Promise(r => setTimeout(r, 100));
+
+            // Re-renderizar os gráficos no clone
+            const originalCharts = firstContent.querySelectorAll('canvas');
+            const clonedCharts = contentClone.querySelectorAll('canvas');
+            
+            for (let i = 0; i < originalCharts.length; i++) {
+                const originalCtx = originalCharts[i].getContext('2d');
+                const clonedCtx = clonedCharts[i].getContext('2d');
+                clonedCharts[i].width = originalCharts[i].width;
+                clonedCharts[i].height = originalCharts[i].height;
+                clonedCtx.drawImage(originalCharts[i], 0, 0);
+            }
 
             try {
-                // Capturar apenas o que está visível
-                const canvas = await html2canvas(reportCapture, {
+                // Capturar o container temporário
+                const canvas = await html2canvas(tempContainer, {
                     scale: 4,
                     backgroundColor: '#ffffff',
                     logging: false,
                     useCORS: true,
-                    allowTaint: true,
-                    width: reportCapture.scrollWidth,
-                    height: reportCapture.scrollHeight
+                    allowTaint: true
                 });
 
                 // Converter para blob e baixar
@@ -1106,11 +1136,8 @@
                 URL.revokeObjectURL(link.href);
                 link.remove();
             } finally {
-                // Restaurar visibilidade de todas as seções
-                sectionsToHide.forEach(item => {
-                    item.title.style.display = '';
-                    if (item.content) item.content.style.display = '';
-                });
+                // Remover container temporário
+                document.body.removeChild(tempContainer);
             }
         }
     </script>
