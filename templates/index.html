@@ -1065,63 +1065,41 @@
                 return;
             }
 
-            // Encontrar o header, título e a primeira seção (Volume x Capacidades)
-            const header = reportCapture.querySelector('.report-header');
-            const title = reportCapture.querySelector('.report-title');
-            const firstSection = reportCapture.querySelector('.section-title');
-            const firstContent = firstSection ? firstSection.nextElementSibling : null;
-
-            if (!firstSection || !firstContent) {
-                alert('Erro: Seção Volume x Capacidades não encontrada');
+            // Encontrar todas as seções
+            const allSectionTitles = reportCapture.querySelectorAll('.section-title');
+            
+            if (allSectionTitles.length === 0) {
+                alert('Erro: Nenhuma seção encontrada');
                 return;
             }
 
-            // Criar container temporário para captura
-            const tempContainer = document.createElement('div');
-            tempContainer.style.cssText = `
-                position: fixed;
-                top: -10000px;
-                left: 0;
-                width: ${reportCapture.scrollWidth}px;
-                background: white;
-                padding: 40px;
-            `;
-
-            // Adicionar os elementos ao container temporário
-            if (header) tempContainer.appendChild(header.cloneNode(true));
-            if (title) tempContainer.appendChild(title.cloneNode(true));
-            tempContainer.appendChild(firstSection.cloneNode(true));
-            
-            // Clonar o conteúdo da primeira seção incluindo os gráficos
-            const contentClone = firstContent.cloneNode(true);
-            tempContainer.appendChild(contentClone);
-            
-            // Adicionar ao body
-            document.body.appendChild(tempContainer);
-
-            // Aguardar renderização
-            await new Promise(r => setTimeout(r, 100));
-
-            // Re-renderizar os gráficos no clone
-            const originalCharts = firstContent.querySelectorAll('canvas');
-            const clonedCharts = contentClone.querySelectorAll('canvas');
-            
-            for (let i = 0; i < originalCharts.length; i++) {
-                const originalCtx = originalCharts[i].getContext('2d');
-                const clonedCtx = clonedCharts[i].getContext('2d');
-                clonedCharts[i].width = originalCharts[i].width;
-                clonedCharts[i].height = originalCharts[i].height;
-                clonedCtx.drawImage(originalCharts[i], 0, 0);
+            // Guardar as seções que vamos ocultar (todas exceto a primeira)
+            const sectionsToHide = [];
+            for (let i = 1; i < allSectionTitles.length; i++) {
+                const title = allSectionTitles[i];
+                const content = title.nextElementSibling;
+                sectionsToHide.push({ title, content, titleDisplay: title.style.display, contentDisplay: content ? content.style.display : '' });
             }
 
             try {
-                // Capturar o container temporário
-                const canvas = await html2canvas(tempContainer, {
+                // Ocultar as seções que não queremos
+                sectionsToHide.forEach(item => {
+                    item.title.style.display = 'none';
+                    if (item.content) item.content.style.display = 'none';
+                });
+
+                // Aguardar um momento para o DOM se ajustar
+                await new Promise(r => setTimeout(r, 300));
+
+                // Capturar o report-capture inteiro (agora só com a primeira seção visível)
+                const canvas = await html2canvas(reportCapture, {
                     scale: 4,
                     backgroundColor: '#ffffff',
                     logging: false,
                     useCORS: true,
-                    allowTaint: true
+                    allowTaint: true,
+                    windowWidth: reportCapture.scrollWidth,
+                    windowHeight: reportCapture.scrollHeight
                 });
 
                 // Converter para blob e baixar
@@ -1136,8 +1114,11 @@
                 URL.revokeObjectURL(link.href);
                 link.remove();
             } finally {
-                // Remover container temporário
-                document.body.removeChild(tempContainer);
+                // Restaurar todas as seções
+                sectionsToHide.forEach(item => {
+                    item.title.style.display = item.titleDisplay;
+                    if (item.content) item.content.style.display = item.contentDisplay;
+                });
             }
         }
     </script>
