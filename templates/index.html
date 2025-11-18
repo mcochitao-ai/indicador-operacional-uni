@@ -1070,27 +1070,62 @@
 
             // Criar container temporário para captura
             const tempContainer = document.createElement('div');
-            tempContainer.style.cssText = 'position: absolute; left: -9999px; top: 0; background: white; padding: 0;';
-            tempContainer.innerHTML = `
-                ${reportHeader.outerHTML}
-                ${sectionTitle.outerHTML}
-                <div class="cds-container">${cdsContainer.innerHTML}</div>
+            tempContainer.style.cssText = `
+                position: fixed; 
+                left: 0; 
+                top: 0; 
+                width: 1920px;
+                background: white; 
+                padding: 0;
+                z-index: 99999;
+                visibility: visible;
             `;
+            
+            // Clonar elementos com estilos computados
+            const headerClone = reportHeader.cloneNode(true);
+            const titleClone = sectionTitle.cloneNode(true);
+            const cdsClone = cdsContainer.cloneNode(true);
+            
+            tempContainer.appendChild(headerClone);
+            tempContainer.appendChild(titleClone);
+            tempContainer.appendChild(cdsClone);
+            
             document.body.appendChild(tempContainer);
 
-            // Aguardar renderização
-            await new Promise(r => setTimeout(r, 500));
+            // Aguardar renderização e execução dos charts
+            await new Promise(r => setTimeout(r, 2000));
 
             try {
                 // Capturar com alta qualidade para PowerPoint
                 const canvas = await html2canvas(tempContainer, {
-                    scale: 5, // Alta resolução para PowerPoint
+                    scale: 4,
                     backgroundColor: '#ffffff',
                     logging: false,
                     useCORS: true,
                     allowTaint: true,
-                    windowWidth: 1920, // Largura HD
-                    removeContainer: true
+                    width: tempContainer.scrollWidth,
+                    height: tempContainer.scrollHeight,
+                    x: 0,
+                    y: 0,
+                    removeContainer: false,
+                    onclone: (clonedDoc) => {
+                        const clonedContainer = clonedDoc.querySelector('div[style*="z-index: 99999"]');
+                        if (clonedContainer) {
+                            clonedContainer.style.visibility = 'visible';
+                            clonedContainer.style.opacity = '1';
+                            // Forçar cores sólidas em todos os elementos
+                            const allElements = clonedContainer.querySelectorAll('*');
+                            allElements.forEach(el => {
+                                const computed = window.getComputedStyle(el);
+                                if (computed.color && computed.color !== 'rgba(0, 0, 0, 0)') {
+                                    el.style.color = computed.color;
+                                }
+                                if (computed.backgroundColor && computed.backgroundColor !== 'rgba(0, 0, 0, 0)') {
+                                    el.style.backgroundColor = computed.backgroundColor;
+                                }
+                            });
+                        }
+                    }
                 });
 
                 // Converter para blob e baixar
