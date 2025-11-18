@@ -1060,7 +1060,7 @@
         async function baixarReuniaoOperacional() {
             // Capturar apenas a seção de Volume x Capacidades (título + cards dos CDs)
             const reportHeader = document.querySelector('.report-header');
-            const sectionTitle = document.querySelectorAll('.section-title')[0]; // Primeiro título (Volume x Capacidades)
+            const sectionTitle = document.querySelectorAll('.section-title')[0];
             const cdsContainer = document.getElementById('cds-container');
             
             if (!reportHeader || !sectionTitle || !cdsContainer) {
@@ -1068,65 +1068,49 @@
                 return;
             }
 
-            // Criar container temporário para captura
-            const tempContainer = document.createElement('div');
-            tempContainer.style.cssText = `
-                position: fixed; 
-                left: 0; 
-                top: 0; 
+            // Criar wrapper temporário apenas para posicionamento
+            const tempWrapper = document.createElement('div');
+            tempWrapper.style.cssText = `
+                position: fixed;
+                left: 0;
+                top: 0;
                 width: 1920px;
-                background: white; 
+                background: white;
                 padding: 0;
                 z-index: 99999;
-                visibility: visible;
             `;
             
-            // Clonar elementos com estilos computados
-            const headerClone = reportHeader.cloneNode(true);
-            const titleClone = sectionTitle.cloneNode(true);
-            const cdsClone = cdsContainer.cloneNode(true);
+            // Mover elementos originais para o wrapper (não clonar, para preservar os canvas)
+            const originalParentHeader = reportHeader.parentNode;
+            const originalParentTitle = sectionTitle.parentNode;
+            const originalParentCds = cdsContainer.parentNode;
             
-            tempContainer.appendChild(headerClone);
-            tempContainer.appendChild(titleClone);
-            tempContainer.appendChild(cdsClone);
+            tempWrapper.appendChild(reportHeader);
+            tempWrapper.appendChild(sectionTitle);
+            tempWrapper.appendChild(cdsContainer);
             
-            document.body.appendChild(tempContainer);
+            document.body.appendChild(tempWrapper);
 
-            // Aguardar renderização e execução dos charts
-            await new Promise(r => setTimeout(r, 2000));
+            // Aguardar renderização
+            await new Promise(r => setTimeout(r, 1000));
 
             try {
-                // Capturar com alta qualidade para PowerPoint
-                const canvas = await html2canvas(tempContainer, {
+                // Capturar com html2canvas
+                const canvas = await html2canvas(tempWrapper, {
                     scale: 4,
                     backgroundColor: '#ffffff',
                     logging: false,
                     useCORS: true,
                     allowTaint: true,
-                    width: tempContainer.scrollWidth,
-                    height: tempContainer.scrollHeight,
-                    x: 0,
-                    y: 0,
-                    removeContainer: false,
-                    onclone: (clonedDoc) => {
-                        const clonedContainer = clonedDoc.querySelector('div[style*="z-index: 99999"]');
-                        if (clonedContainer) {
-                            clonedContainer.style.visibility = 'visible';
-                            clonedContainer.style.opacity = '1';
-                            // Forçar cores sólidas em todos os elementos
-                            const allElements = clonedContainer.querySelectorAll('*');
-                            allElements.forEach(el => {
-                                const computed = window.getComputedStyle(el);
-                                if (computed.color && computed.color !== 'rgba(0, 0, 0, 0)') {
-                                    el.style.color = computed.color;
-                                }
-                                if (computed.backgroundColor && computed.backgroundColor !== 'rgba(0, 0, 0, 0)') {
-                                    el.style.backgroundColor = computed.backgroundColor;
-                                }
-                            });
-                        }
-                    }
+                    width: tempWrapper.scrollWidth,
+                    height: tempWrapper.scrollHeight
                 });
+
+                // Restaurar elementos às posições originais
+                originalParentHeader.insertBefore(reportHeader, originalParentHeader.firstChild);
+                originalParentTitle.parentNode.insertBefore(sectionTitle, originalParentTitle.firstChild);
+                originalParentCds.appendChild(cdsContainer);
+                document.body.removeChild(tempWrapper);
 
                 // Converter para blob e baixar
                 const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 1.0));
@@ -1139,9 +1123,15 @@
                 link.click();
                 URL.revokeObjectURL(link.href);
                 link.remove();
-            } finally {
-                // Remover container temporário
-                document.body.removeChild(tempContainer);
+            } catch (error) {
+                // Em caso de erro, restaurar elementos
+                if (tempWrapper.parentNode) {
+                    if (tempWrapper.contains(reportHeader)) originalParentHeader.insertBefore(reportHeader, originalParentHeader.firstChild);
+                    if (tempWrapper.contains(sectionTitle)) originalParentTitle.insertBefore(sectionTitle, originalParentTitle.firstChild);
+                    if (tempWrapper.contains(cdsContainer)) originalParentCds.appendChild(cdsContainer);
+                    document.body.removeChild(tempWrapper);
+                }
+                alert('Erro ao capturar imagem: ' + error.message);
             }
         }
     </script>
