@@ -122,9 +122,6 @@
                 <button onclick="baixarComoImagem()" class="btn-primary" style="max-width: 300px; margin: 0 10px;">
                     <i class="fas fa-camera"></i> Baixar como Imagem
                 </button>
-                <button onclick="baixarReuniaoOperacional()" class="btn-primary" style="max-width: 300px; margin: 0 10px;">
-                    <i class="fas fa-presentation"></i> Reunião Operacional
-                </button>
                 <button onclick="enviarEmail()" class="btn-primary" style="max-width: 300px; margin: 0 10px;">
                     <i class="fas fa-envelope"></i> Enviar E-mail
                 </button>
@@ -1055,71 +1052,6 @@
             const ccList = EMAIL_CC.join(';');
             const mailto = `mailto:${toList}?cc=${ccList}&subject=${encodeURIComponent(assunto)}&body=${encodeURIComponent(corpo)}`;
             window.location.href = mailto;
-        }
-
-        async function baixarReuniaoOperacional() {
-            const reportCapture = document.getElementById('report-capture');
-            
-            if (!reportCapture) {
-                alert('Erro: Relatório não encontrado');
-                return;
-            }
-
-            // Encontrar todas as seções
-            const allSectionTitles = reportCapture.querySelectorAll('.section-title');
-            
-            if (allSectionTitles.length === 0) {
-                alert('Erro: Nenhuma seção encontrada');
-                return;
-            }
-
-            // Guardar as seções que vamos ocultar (todas exceto a primeira)
-            const sectionsToHide = [];
-            for (let i = 1; i < allSectionTitles.length; i++) {
-                const title = allSectionTitles[i];
-                const content = title.nextElementSibling;
-                sectionsToHide.push({ title, content, titleDisplay: title.style.display, contentDisplay: content ? content.style.display : '' });
-            }
-
-            try {
-                // Ocultar as seções que não queremos
-                sectionsToHide.forEach(item => {
-                    item.title.style.display = 'none';
-                    if (item.content) item.content.style.display = 'none';
-                });
-
-                // Aguardar um momento para o DOM se ajustar
-                await new Promise(r => setTimeout(r, 300));
-
-                // Capturar o report-capture inteiro (agora só com a primeira seção visível)
-                const canvas = await html2canvas(reportCapture, {
-                    scale: 4,
-                    backgroundColor: '#ffffff',
-                    logging: false,
-                    useCORS: true,
-                    allowTaint: true,
-                    windowWidth: reportCapture.scrollWidth,
-                    windowHeight: reportCapture.scrollHeight
-                });
-
-                // Converter para blob e baixar
-                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 1.0));
-                const nomeArquivo = `Reuniao_Operacional_${new Date().toISOString().slice(0,10).replace(/-/g,'')}.png`;
-                
-                const link = document.createElement('a');
-                link.download = nomeArquivo;
-                link.href = URL.createObjectURL(blob);
-                document.body.appendChild(link);
-                link.click();
-                URL.revokeObjectURL(link.href);
-                link.remove();
-            } finally {
-                // Restaurar todas as seções
-                sectionsToHide.forEach(item => {
-                    item.title.style.display = item.titleDisplay;
-                    if (item.content) item.content.style.display = item.contentDisplay;
-                });
-            }
         }
     </script>
  </body>
