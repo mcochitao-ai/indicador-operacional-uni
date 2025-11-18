@@ -122,6 +122,9 @@
                 <button onclick="baixarComoImagem()" class="btn-primary" style="max-width: 300px; margin: 0 10px;">
                     <i class="fas fa-camera"></i> Baixar como Imagem
                 </button>
+                <button onclick="baixarReuniaoOperacional()" class="btn-primary" style="max-width: 300px; margin: 0 10px;">
+                    <i class="fas fa-presentation"></i> Reunião Operacional
+                </button>
                 <button onclick="enviarEmail()" class="btn-primary" style="max-width: 300px; margin: 0 10px;">
                     <i class="fas fa-envelope"></i> Enviar E-mail
                 </button>
@@ -1052,6 +1055,59 @@
             const ccList = EMAIL_CC.join(';');
             const mailto = `mailto:${toList}?cc=${ccList}&subject=${encodeURIComponent(assunto)}&body=${encodeURIComponent(corpo)}`;
             window.location.href = mailto;
+        }
+
+        async function baixarReuniaoOperacional() {
+            // Capturar apenas a seção de Volume x Capacidades (título + cards dos CDs)
+            const reportHeader = document.querySelector('.report-header');
+            const sectionTitle = document.querySelectorAll('.section-title')[0]; // Primeiro título (Volume x Capacidades)
+            const cdsContainer = document.getElementById('cds-container');
+            
+            if (!reportHeader || !sectionTitle || !cdsContainer) {
+                alert('Erro: Seção não encontrada');
+                return;
+            }
+
+            // Criar container temporário para captura
+            const tempContainer = document.createElement('div');
+            tempContainer.style.cssText = 'position: absolute; left: -9999px; top: 0; background: white; padding: 0;';
+            tempContainer.innerHTML = `
+                ${reportHeader.outerHTML}
+                ${sectionTitle.outerHTML}
+                <div class="cds-container">${cdsContainer.innerHTML}</div>
+            `;
+            document.body.appendChild(tempContainer);
+
+            // Aguardar renderização
+            await new Promise(r => setTimeout(r, 500));
+
+            try {
+                // Capturar com alta qualidade para PowerPoint
+                const canvas = await html2canvas(tempContainer, {
+                    scale: 5, // Alta resolução para PowerPoint
+                    backgroundColor: '#ffffff',
+                    logging: false,
+                    useCORS: true,
+                    allowTaint: true,
+                    windowWidth: 1920, // Largura HD
+                    removeContainer: true
+                });
+
+                // Converter para blob e baixar
+                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 1.0));
+                const nomeArquivo = `Reuniao_Operacional_${new Date().toISOString().slice(0,10).replace(/-/g,'')}.png`;
+                
+                const link = document.createElement('a');
+                link.download = nomeArquivo;
+                link.href = URL.createObjectURL(blob);
+                document.body.appendChild(link);
+                link.click();
+                URL.revokeObjectURL(link.href);
+                link.remove();
+            } finally {
+                // Remover container temporário
+                document.body.removeChild(tempContainer);
+            }
         }
     </script>
  </body>
