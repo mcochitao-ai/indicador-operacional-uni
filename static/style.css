@@ -602,31 +602,29 @@ select:focus {
 
 /* Legenda dos Símbolos */
 .legend-container {
-    background: #f8f9fa;
-    padding: 8px 15px;
+    background: transparent;
+    padding: 4px 10px;
     display: flex;
     justify-content: center;
-    gap: 25px;
-    border-top: 1px solid #e0e0e0;
-    font-size: 0.8em;
+    gap: 15px;
+    font-size: 0.7em;
+    color: #888;
 }
 
 .legend-item {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 4px;
 }
 
 .legend-symbol {
-    font-size: 1em;
-    font-weight: 700;
-    padding: 2px 5px;
-    border-radius: 3px;
+    font-size: 0.9em;
+    font-weight: 600;
 }
 
 .legend-text {
-    color: #555;
-    font-weight: 500;
+    color: #888;
+    font-weight: 400;
 }
 
 /* Dock Vendas Section */
