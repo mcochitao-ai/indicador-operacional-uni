@@ -600,6 +600,35 @@ select:focus {
     color: #e67e22 !important;
 }
 
+/* Legenda dos Símbolos */
+.legend-container {
+    background: #f8f9fa;
+    padding: 8px 15px;
+    display: flex;
+    justify-content: center;
+    gap: 25px;
+    border-top: 1px solid #e0e0e0;
+    font-size: 0.8em;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.legend-symbol {
+    font-size: 1em;
+    font-weight: 700;
+    padding: 2px 5px;
+    border-radius: 3px;
+}
+
+.legend-text {
+    color: #555;
+    font-weight: 500;
+}
+
 /* Dock Vendas Section */
 .dock-container {
     display: grid;
