@@ -224,6 +224,20 @@
                 
                 const statusClass = getStatusClass(cd.status_inclusao);
                 const statusTexto = getStatusTexto(cd.status_inclusao);
+
+                const palletRow = `
+                            <div class="metric-row">
+                                <span class="metric-label">PALLET ${getStatusIcon(cd.status_pallets)}</span>
+                                <span class="metric-value ${getMetricClass(cd.capacidade_pallet)}">${formatarValor(cd.capacidade_pallet, '%')}</span>
+                            </div>`;
+
+                const caixaRow = `
+                            <div class="metric-row">
+                                <span class="metric-label">CAIXA ${getStatusIcon(cd.status_caixas)}</span>
+                                <span class="metric-value ${getMetricClass(cd.capacidade_caixas)}">${formatarValor(cd.capacidade_caixas, '%')}</span>
+                            </div>`;
+
+                const metricsRows = isOnlyPallet(cd.nome) ? palletRow : `${caixaRow}${palletRow}`;
                 
                 cdCard.innerHTML = `
                     <div class="cd-content">
@@ -238,14 +252,7 @@
                             <span class="status-badge ${statusClass}">${statusTexto}</span>
                         </div>
                         <div class="cd-metrics">
-                            <div class="metric-row">
-                                <span class="metric-label">CAIXA ${getStatusIcon(cd.status_caixas)}</span>
-                                <span class="metric-value ${getMetricClass(cd.capacidade_caixas)}">${formatarValor(cd.capacidade_caixas, '%')}</span>
-                            </div>
-                            <div class="metric-row">
-                                <span class="metric-label">PALLET ${getStatusIcon(cd.status_pallets)}</span>
-                                <span class="metric-value ${getMetricClass(cd.capacidade_pallet)}">${formatarValor(cd.capacidade_pallet, '%')}</span>
-                            </div>
+                            ${metricsRows}
                         </div>
                     </div>
                 `;
@@ -838,6 +845,12 @@
                 return '<span class="status-icon status-icon-open">✓</span>';
             }
             return '<span class="status-icon status-icon-closed">✗</span>';
+        }
+
+        function isOnlyPallet(nomeCd) {
+            if (!nomeCd) return false;
+            const nomeLower = nomeCd.toString().toLowerCase();
+            return nomeLower.includes('indaiatuba') || nomeLower.includes('igarassu');
         }
 
         function getMetricClass(valor) {
