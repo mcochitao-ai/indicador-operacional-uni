@@ -1,5 +1,123 @@
 import openpyxl
 
+def processar_backlog_fluxo(filepath, dia):
+    """
+    Processa o arquivo Excel de backlog fluxo e extrai os valores
+    Lê da aba "Dinâmicas", linhas 108-119, e pega o valor do dia ANTERIOR
+    
+    Args:
+        filepath: Caminho do arquivo Excel de backlog fluxo
+        dia: Número do dia atual (1-31) - será usado dia-1 para buscar o backlog
+    
+    Returns:
+        dict: Dicionário com nome do CD como chave e valor do backlog fluxo
+    """
+    try:
+        # Abrir o arquivo Excel (suprimindo warnings)
+        import warnings
+        warnings.filterwarnings('ignore', category=UserWarning, module='openpyxl')
+        
+        wb = openpyxl.load_workbook(filepath, data_only=True, keep_vba=True)
+        
+        # Selecionar a aba "Dinâmicas"
+        if 'Dinâmicas' not in wb.sheetnames:
+            raise ValueError('Aba "Dinâmicas" não encontrada no arquivo de backlog fluxo')
+        
+        ws = wb['Dinâmicas']
+        
+        # Dicionário para armazenar backlog fluxo por CD
+        backlog_fluxo = {}
+        
+        # Calcular o dia anterior
+        dia_anterior = dia - 1
+        if dia_anterior < 1:
+            # Se for dia 1, não há dia anterior, retornar vazio
+            wb.close()
+            return {}
+        
+        # Encontrar a coluna do dia anterior
+        # Linha 108 tem os cabeçalhos com as datas
+        coluna_dia = None
+        for col_idx in range(1, 50):  # Verificar até coluna 50
+            cell = ws.cell(row=108, column=col_idx)
+            if cell.value:
+                # Verificar se é uma data ou número que corresponde ao dia anterior
+                valor_celula = str(cell.value)
+                # Pode ser formato de data ou apenas o número do dia
+                if str(dia_anterior) in valor_celula or valor_celula == str(dia_anterior):
+                    coluna_dia = col_idx
+                    break
+                # Verificar se é uma data completa (DD/MM/YYYY ou datetime)
+                try:
+                    from datetime import datetime
+                    if isinstance(cell.value, datetime):
+                        if cell.value.day == dia_anterior:
+                            coluna_dia = col_idx
+                            break
+                    elif '/' in valor_celula:
+                        # Formato DD/MM/YYYY
+                        dia_na_celula = int(valor_celula.split('/')[0])
+                        if dia_na_celula == dia_anterior:
+                            coluna_dia = col_idx
+                            break
+                except:
+                    pass
+        
+        if coluna_dia is None:
+            # Se não encontrou o dia anterior, retornar vazio
+            wb.close()
+            return {}
+        
+        # Ler os dados das linhas 109 a 119 (CDs estão aqui)
+        for row in range(109, 120):  # 109 a 119
+            # Coluna A ou B deve ter o nome do CD (vou tentar ambas)
+            cd_nome = ws.cell(row=row, column=1).value  # Coluna A
+            if not cd_nome or cd_nome == '' or cd_nome == 'Total Geral':
+                cd_nome = ws.cell(row=row, column=2).value  # Tentar coluna B
+            
+            # Pular linhas vazias ou Total Geral
+            if not cd_nome or cd_nome == '' or cd_nome == 'Total Geral':
+                continue
+            
+            # Valor do backlog fluxo na coluna do dia anterior
+            valor_backlog = ws.cell(row=row, column=coluna_dia).value
+            
+            valor_formatado = 0
+            if valor_backlog is not None:
+                try:
+                    valor_formatado = float(valor_backlog)
+                except (ValueError, TypeError):
+                    valor_formatado = 0
+            
+            # Normalizar nome do CD para garantir correspondência
+            cd_nome_normalizado = str(cd_nome).strip().upper()
+            
+            # Mapear nomes possíveis
+            mapeamento_nomes = {
+                'CABO STO AGOSTINHO': 'CABO DE SANTO AGOSTINHO',
+                'CABO': 'CABO DE SANTO AGOSTINHO',
+                'GOIÂNIA': 'GOIÂNIA',
+                'IGARASSU': 'IGARASSU',
+                'INDAIATUBA': 'INDAIATUBA',
+                'JABOATÃO': 'JABOATÃO',
+                'LOUVEIRA': 'LOUVEIRA',
+                'POUSO ALEGRE': 'POUSO ALEGRE',
+                'SERRA': 'SERRA'
+            }
+            
+            # Usar o nome mapeado se existir, senão usar o nome original
+            cd_final = mapeamento_nomes.get(cd_nome_normalizado, cd_nome)
+            
+            backlog_fluxo[cd_final] = valor_formatado
+        
+        wb.close()
+        
+        return backlog_fluxo
+        
+    except Exception as e:
+        raise Exception(f'Erro ao processar arquivo de backlog fluxo: {str(e)}')
+
+
 def processar_capacidade(filepath, dia):
     """
     Processa o arquivo Excel e extrai dados de capacidade dos CDs
@@ -36,10 +154,10 @@ def processar_capacidade(filepath, dia):
             valor_x = ws[f'X{row}'].value
             valor_c = ws[f'C{row}'].value
             
-            # Capacidade de pallet: AM (invertido - estava AH)
+            # Capacidade de pallet: AM
             capacidade_pallet = ws[f'AM{row}'].value
             
-            # Capacidade de caixas: AH (invertido - estava AM)
+            # Capacidade de caixas: AH
             capacidade_caixas = ws[f'AH{row}'].value
             
             # Status de abertura para inclusão: Y
@@ -197,16 +315,18 @@ def processar_capacidade(filepath, dia):
             cds.append(cd_data)
         
         # Extrair Perdas W e T (linhas 16 a 23, colunas G e H)
-        # E adicionar backlog_vendas e backlog_total aos CDs
+        # E adicionar backlog_vendas, backlog_expedido e backlog_total aos CDs
         perdas = []
         for idx, cd in enumerate(cds):
             row = 16 + idx  # linha 16 corresponde ao primeiro CD, 17 ao segundo, etc.
             
             perda_w = ws[f'G{row}'].value
             perda_t = ws[f'H{row}'].value
+            faturado_expedido = ws[f'I{row}'].value
             
             perda_w_formatada = 0
             perda_t_formatada = 0
+            faturado_expedido_formatado = 0
             
             if perda_w is not None:
                 try:
@@ -220,14 +340,24 @@ def processar_capacidade(filepath, dia):
                 except (ValueError, TypeError):
                     perda_t_formatada = 0
             
-            # Backlog de vendas = Perdas W + Perdas T
-            backlog_vendas = perda_w_formatada + perda_t_formatada
+            if faturado_expedido is not None:
+                try:
+                    faturado_expedido_formatado = float(faturado_expedido)
+                except (ValueError, TypeError):
+                    faturado_expedido_formatado = 0
+            
+            # Backlog de vendas = (Perdas W + Perdas T) - Faturado/Expedido
+            backlog_vendas = (perda_w_formatada + perda_t_formatada) - faturado_expedido_formatado
+            # Garantir que não seja negativo
+            if backlog_vendas < 0:
+                backlog_vendas = 0
             
             # Backlog total = Backlog de vendas + Backlog de transferências
             backlog_total = backlog_vendas + cd['backlog_transferencias']
             
-            # Adicionar backlog_vendas e backlog_total ao CD
+            # Adicionar backlog_vendas, backlog_expedido e backlog_total ao CD
             cd['backlog_vendas'] = backlog_vendas
+            cd['backlog_expedido'] = faturado_expedido_formatado
             cd['backlog_total'] = backlog_total
             
             perda_data = {

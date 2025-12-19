@@ -68,6 +68,22 @@
                     </label>
                 </div>
 
+                <div class="form-group">
+                    <label for="fluxo_fiscal_igarassu">
+                        <span class="label-text">Fluxo Fiscal Igarassu (tons):</span>
+                        <input type="number" id="fluxo_fiscal_igarassu" name="fluxo_fiscal_igarassu" 
+                               step="0.01" min="0" placeholder="Digite o valor do fluxo fiscal de Igarassu" required>
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label for="fluxo_fiscal_indaiatuba">
+                        <span class="label-text">Fluxo Fiscal Indaiatuba (tons):</span>
+                        <input type="number" id="fluxo_fiscal_indaiatuba" name="fluxo_fiscal_indaiatuba" 
+                               step="0.01" min="0" placeholder="Digite o valor do fluxo fiscal de Indaiatuba" required>
+                    </label>
+                </div>
+
                 <button type="submit" class="btn-primary" id="submitBtn">
                     <span class="btn-text">Gerar Indicador</span>
                     <span class="loader" style="display: none;"></span>
@@ -153,6 +169,7 @@
         const loader = document.querySelector('.loader');
         const errorMessage = document.getElementById('error-message');
         const resultsSection = document.getElementById('results');
+        let dadosGlobais = null;
 
         // Atualizar nome do arquivo
         fileInput.addEventListener('change', function() {
@@ -206,6 +223,9 @@
         }
 
         function exibirResultados(dados) {
+            // Salvar dados globais para usar em outras funções
+            dadosGlobais = dados;
+            
             // Atualizar data no cabeçalho
             const hoje = new Date();
             const dataFormatada = hoje.toLocaleDateString('pt-BR', { 
@@ -331,78 +351,70 @@
                 return;
             }
             
-            let totalBacklogGeral = 0;
+            let totalBacklogPuro = 0;
             let totalBacklogVendas = 0;
             let totalBacklogTransferencias = 0;
+            let totalFluxoFiscal = 0;
             
-            cds.forEach((cd, index) => {
+            const temFluxoFiscal = cds.some(cd => cd.fluxo_fiscal !== undefined && cd.fluxo_fiscal !== null && cd.fluxo_fiscal > 0);
+            
+            cds.forEach((cd) => {
                 const card = document.createElement('div');
                 card.className = 'dock-total-card';
                 
                 const backlogVendas = cd.backlog_vendas || 0;
                 const backlogTransferencias = cd.backlog_transferencias || 0;
                 const backlogTotal = cd.backlog_total || 0;
+                const fluxoFiscal = cd.fluxo_fiscal || 0;
+                const backlogPuro = backlogTotal;  // Agora backlog_total já é o valor real pendente
                 
-                totalBacklogGeral += backlogTotal;
+                totalBacklogPuro += backlogPuro;
                 totalBacklogVendas += backlogVendas;
                 totalBacklogTransferencias += backlogTransferencias;
+                totalFluxoFiscal += fluxoFiscal;
                 
                 card.innerHTML = `
                     <div class="dock-total-header">
-                        <div class="dock-total-value-top">${formatarNumeroInteiro(backlogTotal)}</div>
+                        <div class="dock-total-value-top">${formatarNumeroInteiro(backlogPuro)}</div>
                         <div class="dock-total-name">${cd.nome}</div>
                     </div>
-                    <div class="dock-total-chart">
-                        <canvas id="backlog-chart-${index}"></canvas>
-                    </div>
-                    <div class="dock-total-legend">
-                        <div class="legend-item">
-                            <span class="legend-color" style="background: #c0392b;"></span>
-                            <span class="legend-text">Vendas</span>
-                            <span class="legend-value">${formatarNumeroInteiro(backlogVendas)}</span>
-                        </div>
-                        <div class="legend-item">
-                            <span class="legend-color" style="background: #f39c12;"></span>
-                            <span class="legend-text">Transferências</span>
-                            <span class="legend-value">${formatarNumeroInteiro(backlogTransferencias)}</span>
-                        </div>
+                    <div style="padding: 12px 14px; display: flex; flex-direction: column; gap: 6px;">
+                        ${renderLinhaBacklog('Backlog', backlogPuro, '#0f5132', '#e9f6ef', true)}
+                        ${renderLinhaBacklog('Fluxo Fiscal', fluxoFiscal, '#f39c12', '#fef5e7', temFluxoFiscal)}
+                        ${renderLinhaBacklog('Vendas', backlogVendas, '#2c3e50', '#f6f7f9', true)}
+                        ${renderLinhaBacklog('Transferências', backlogTransferencias, '#2c3e50', '#f6f7f9', true)}
                     </div>
                 `;
                 
                 container.appendChild(card);
-                
-                // Criar gráfico de barras
-                setTimeout(() => createBacklogChart(`backlog-chart-${index}`, backlogVendas, backlogTransferencias), 100);
             });
             
-            // Adicionar card de total Brasil
             const totalGeralCard = document.createElement('div');
             totalGeralCard.className = 'dock-total-card dock-card-total-geral';
             
+            const totalGeral = totalBacklogPuro;  // Total já é o pendente real
+            const badgeFluxo = temFluxoFiscal
+                ? `<span style="padding: 4px 8px; background: rgba(155,89,182,0.15); color: #d5c4e8; border-radius: 999px; font-size: 12px; font-weight: 600;">Fluxo Fiscal: ${formatarNumeroInteiro(totalFluxoFiscal)}</span>`
+                : '';
+            const badgePuro = `<span style="padding: 4px 8px; background: rgba(0,0,0,0.15); color: #e8f6ef; border-radius: 999px; font-size: 12px; font-weight: 600;">Backlog: ${formatarNumeroInteiro(totalBacklogPuro)}</span>`;
+
             totalGeralCard.innerHTML = `
-                <div class="dock-total-header" style="background: #c0392b; color: white;">
-                    <div class="dock-total-value-top" style="color: white;">${formatarNumeroInteiro(totalBacklogGeral)}</div>
-                    <div class="dock-total-name" style="color: white;">TOTAL BRASIL</div>
-                </div>
-                <div class="dock-total-chart">
-                    <canvas id="backlog-chart-total"></canvas>
-                </div>
-                <div class="dock-total-legend">
-                    <div class="legend-item">
-                        <span class="legend-color" style="background: #c0392b;"></span>
-                        <span class="legend-text">Vendas</span>
-                        <span class="legend-value">${formatarNumeroInteiro(totalBacklogVendas)}</span>
+                <div class="dock-total-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; border-radius: 12px 12px 0 0;">
+                    <div class="dock-total-value-top" style="color: white; font-size: 2.5em; font-weight: 800; margin-top: 8px;">${formatarNumeroInteiro(totalGeral)}</div>
+                    <div class="dock-total-name" style="color: white; font-size: 1.1em; font-weight: 600;">TOTAL BRASIL</div>
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; font-size: 0.9em;">
+                        ${badgePuro}
+                        ${badgeFluxo}
                     </div>
-                    <div class="legend-item">
-                        <span class="legend-color" style="background: #f39c12;"></span>
-                        <span class="legend-text">Transferências</span>
-                        <span class="legend-value">${formatarNumeroInteiro(totalBacklogTransferencias)}</span>
-                    </div>
+                    <div style="height: 1px; background: rgba(255,255,255,0.2); width: 100%; margin: 4px 0;"></div>
+                </div>
+                <div style="padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; background: white;">
+                    ${renderLinhaBacklog('Vendas', totalBacklogVendas, '#2c3e50', '#f6f7f9', true)}
+                    ${renderLinhaBacklog('Transferências', totalBacklogTransferencias, '#2c3e50', '#f6f7f9', true)}
                 </div>
             `;
             
             container.appendChild(totalGeralCard);
-            setTimeout(() => createBacklogChart('backlog-chart-total', totalBacklogVendas, totalBacklogTransferencias), 100);
         }
 
         function createBacklogChart(canvasId, perdasW, perdasT) {
@@ -464,6 +476,50 @@
                     }
                 }
             });
+        }
+
+        // Linha de backlog resumida (label + valor). Se "mostrar" for falso, retorna string vazia.
+        function renderLinhaBacklog(label, valor, corTexto, corFundo, mostrar) {
+            if (!mostrar) return '';
+            return `
+                <div style="background:${corFundo}; color:${corTexto}; padding:10px 12px; border-radius:8px; font-size:13px; display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-weight:600;">${label}</span>
+                    <span style="font-weight:700;">${formatarNumeroInteiro(valor)}</span>
+                </div>
+            `;
+        }
+
+        // Parseia números colados do Excel considerando diferentes separadores e ignora decimais
+        function parseValorColado(valorStr) {
+            if (!valorStr) return 0;
+            let s = String(valorStr).trim();
+            if (s === '') return 0;
+            // Remove espaços finos e não quebráveis
+            s = s.replace(/\s+/g, '');
+            const temPonto = s.includes('.');
+            const temVirgula = s.includes(',');
+            if (temPonto && temVirgula) {
+                // Usa o último separador como decimal, remove o outro como milhar
+                const lastDot = s.lastIndexOf('.');
+                const lastComma = s.lastIndexOf(',');
+                if (lastComma > lastDot) {
+                    // vírgula é decimal
+                    s = s.replace(/\./g, '').replace(',', '.');
+                } else {
+                    // ponto é decimal
+                    s = s.replace(/,/g, '');
+                }
+            } else if (temVirgula) {
+                // vírgula como decimal
+                s = s.replace('.', '');
+                s = s.replace(',', '.');
+            } else {
+                // apenas ponto → tratar como decimal
+                // nada a fazer
+            }
+            const n = parseFloat(s);
+            if (isNaN(n)) return 0;
+            return Math.floor(n); // descarta fração
         }
 
         function exibirDockVendas(cds) {
@@ -612,6 +668,122 @@
             });
         }
 
+
+
+
+
+        function createDonutChart(canvasId, percentage) {
+            const ctx = document.getElementById(canvasId);
+            if (!ctx) return;
+            
+            const valor = percentage || 0;
+            const restante = Math.max(0, 100 - valor);
+            
+            // Definir cor baseada no valor
+            // Critério pedido:
+            // 0–79,9 -> Verde | 80–99,9 -> Amarelo | 100+ -> Vermelho
+            let cor = '#4CAF50'; // Verde (<=79,9)
+            if (valor >= 100) {
+                cor = '#DC3545'; // Vermelho
+            } else if (valor >= 80) {
+                cor = '#FFC107'; // Amarelo
+            }
+            
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    datasets: [{
+                        data: valor > 100 ? [100, 0] : [valor, restante],
+                        backgroundColor: [cor, '#E0E0E0'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    cutout: '75%',
+                    animation: {
+                        animateRotate: true,
+                        animateScale: true,
+                        duration: 1200,
+                        easing: 'easeInOutQuart'
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            enabled: true,
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            padding: 12,
+                            cornerRadius: 8,
+                            titleFont: { size: 14, weight: 'bold' },
+                            bodyFont: { size: 13 },
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Capacidade: ' + formatarNumeroInteiro(valor) + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createDonutChart(canvasId, percentage) {
+            const ctx = document.getElementById(canvasId);
+            if (!ctx) return;
+            
+            const valor = percentage || 0;
+            const restante = Math.max(0, 100 - valor);
+            
+            // Definir cor baseada no valor
+            // Critério pedido:
+            // 0–79,9 -> Verde | 80–99,9 -> Amarelo | 100+ -> Vermelho
+            let cor = '#4CAF50'; // Verde (<=79,9)
+            if (valor >= 100) {
+                cor = '#DC3545'; // Vermelho
+            } else if (valor >= 80) {
+                cor = '#FFC107'; // Amarelo
+            }
+            
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    datasets: [{
+                        data: valor > 100 ? [100, 0] : [valor, restante],
+                        backgroundColor: [cor, '#E0E0E0'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    cutout: '75%',
+                    animation: {
+                        animateRotate: true,
+                        animateScale: true,
+                        duration: 1200,
+                        easing: 'easeInOutQuart'
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            enabled: true,
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            padding: 12,
+                            cornerRadius: 8,
+                            titleFont: { size: 14, weight: 'bold' },
+                            bodyFont: { size: 13 },
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Capacidade: ' + formatarNumeroInteiro(valor) + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
         function exibirDockTotal(cds) {
             const container = document.getElementById('dock-total-container');
             container.innerHTML = '';
@@ -744,62 +916,6 @@
                         y: {
                             stacked: true,
                             display: false
-                        }
-                    }
-                }
-            });
-        }
-
-        function createDonutChart(canvasId, percentage) {
-            const ctx = document.getElementById(canvasId);
-            if (!ctx) return;
-            
-            const valor = percentage || 0;
-            const restante = Math.max(0, 100 - valor);
-            
-            // Definir cor baseada no valor
-            // Critério pedido:
-            // 0–79,9 -> Verde | 80–99,9 -> Amarelo | 100+ -> Vermelho
-            let cor = '#4CAF50'; // Verde (<=79,9)
-            if (valor >= 100) {
-                cor = '#DC3545'; // Vermelho
-            } else if (valor >= 80) {
-                cor = '#FFC107'; // Amarelo
-            }
-            
-            new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    datasets: [{
-                        data: valor > 100 ? [100, 0] : [valor, restante],
-                        backgroundColor: [cor, '#E0E0E0'],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    cutout: '75%',
-                    animation: {
-                        animateRotate: true,
-                        animateScale: true,
-                        duration: 1200,
-                        easing: 'easeInOutQuart'
-                    },
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            enabled: true,
-                            backgroundColor: 'rgba(0,0,0,0.8)',
-                            padding: 12,
-                            cornerRadius: 8,
-                            titleFont: { size: 14, weight: 'bold' },
-                            bodyFont: { size: 13 },
-                            callbacks: {
-                                label: function(context) {
-                                    return 'Capacidade: ' + formatarNumeroInteiro(valor) + '%';
-                                }
-                            }
                         }
                     }
                 }
