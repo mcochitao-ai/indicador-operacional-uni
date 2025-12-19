@@ -368,10 +368,19 @@
                 const fluxoFiscal = cd.fluxo_fiscal || 0;
                 const backlogPuro = backlogTotal;  // Agora backlog_total já é o valor real pendente
                 
+                // Verificar se é fábrica (Igarassu ou Indaiatuba)
+                const nomeLower = cd.nome.toLowerCase();
+                const isFabrica = nomeLower.includes('igarassu') || nomeLower.includes('indaiatuba');
+                
                 totalBacklogPuro += backlogPuro;
                 totalBacklogVendas += backlogVendas;
                 totalBacklogTransferencias += backlogTransferencias;
                 totalFluxoFiscal += fluxoFiscal;
+                
+                // Montar HTML com ou sem Fluxo Fiscal dependendo se é fábrica
+                const linhaFluxoFiscal = isFabrica 
+                    ? `${renderLinhaBacklog('Fluxo Fiscal', fluxoFiscal, '#f39c12', '#fef5e7', temFluxoFiscal)}` 
+                    : '';
                 
                 card.innerHTML = `
                     <div class="dock-total-header">
@@ -380,7 +389,7 @@
                     </div>
                     <div style="padding: 12px 14px; display: flex; flex-direction: column; gap: 6px;">
                         ${renderLinhaBacklog('Backlog', backlogPuro, '#0f5132', '#e9f6ef', true)}
-                        ${renderLinhaBacklog('Fluxo Fiscal', fluxoFiscal, '#f39c12', '#fef5e7', temFluxoFiscal)}
+                        ${linhaFluxoFiscal}
                         ${renderLinhaBacklog('Vendas', backlogVendas, '#2c3e50', '#f6f7f9', true)}
                         ${renderLinhaBacklog('Transferências', backlogTransferencias, '#2c3e50', '#f6f7f9', true)}
                     </div>
