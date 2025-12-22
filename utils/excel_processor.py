@@ -278,6 +278,15 @@ def processar_capacidade(filepath, dia):
             # Total Dock
             dock_total_geral = dock_total_vendas + dock_total_transferencias
             
+            # Total de Fluxo (coluna G)
+            total_fluxo = ws[f'G{row}'].value
+            total_fluxo_formatado = 0
+            if total_fluxo is not None:
+                try:
+                    total_fluxo_formatado = float(total_fluxo)
+                except (ValueError, TypeError):
+                    total_fluxo_formatado = 0
+            
             # Agendamentos formatado
             agendamentos_formatado = 0
             if agendamentos is not None:
@@ -309,7 +318,8 @@ def processar_capacidade(filepath, dia):
                 'dock_total_transferencias': dock_total_transferencias,
                 'dock_total_geral': dock_total_geral,
                 'agendamentos': agendamentos_formatado,
-                'backlog_transferencias': backlog_transferencias_formatado
+                'backlog_transferencias': backlog_transferencias_formatado,
+                'total_fluxo': total_fluxo_formatado
             }
             
             cds.append(cd_data)
@@ -352,12 +362,19 @@ def processar_capacidade(filepath, dia):
             if backlog_vendas < 0:
                 backlog_vendas = 0
             
+            # Fluxo Fiscal = Total de Fluxo - Faturado/Expedido
+            fluxo_fiscal = cd['total_fluxo'] - faturado_expedido_formatado
+            # Garantir que não seja negativo
+            if fluxo_fiscal < 0:
+                fluxo_fiscal = 0
+            
             # Backlog total = Backlog de vendas + Backlog de transferências
             backlog_total = backlog_vendas + cd['backlog_transferencias']
             
-            # Adicionar backlog_vendas, backlog_expedido e backlog_total ao CD
+            # Adicionar backlog_vendas, backlog_expedido, fluxo_fiscal e backlog_total ao CD
             cd['backlog_vendas'] = backlog_vendas
             cd['backlog_expedido'] = faturado_expedido_formatado
+            cd['fluxo_fiscal'] = fluxo_fiscal
             cd['backlog_total'] = backlog_total
             
             perda_data = {

@@ -68,22 +68,6 @@
                     </label>
                 </div>
 
-                <div class="form-group">
-                    <label for="fluxo_fiscal_igarassu">
-                        <span class="label-text">Fluxo Fiscal Igarassu (tons):</span>
-                        <input type="number" id="fluxo_fiscal_igarassu" name="fluxo_fiscal_igarassu" 
-                               step="0.01" min="0" placeholder="Digite o valor do fluxo fiscal de Igarassu" required>
-                    </label>
-                </div>
-
-                <div class="form-group">
-                    <label for="fluxo_fiscal_indaiatuba">
-                        <span class="label-text">Fluxo Fiscal Indaiatuba (tons):</span>
-                        <input type="number" id="fluxo_fiscal_indaiatuba" name="fluxo_fiscal_indaiatuba" 
-                               step="0.01" min="0" placeholder="Digite o valor do fluxo fiscal de Indaiatuba" required>
-                    </label>
-                </div>
-
                 <button type="submit" class="btn-primary" id="submitBtn">
                     <span class="btn-text">Gerar Indicador</span>
                     <span class="loader" style="display: none;"></span>
@@ -367,6 +351,7 @@
                 const backlogTotal = cd.backlog_total || 0;
                 const fluxoFiscal = cd.fluxo_fiscal || 0;
                 const backlogPuro = backlogTotal;  // Agora backlog_total já é o valor real pendente
+                const totalCardValor = backlogPuro + fluxoFiscal; // Total por CD inclui fluxo fiscal quando houver
                 
                 // Verificar se é fábrica (Igarassu ou Indaiatuba)
                 const nomeLower = cd.nome.toLowerCase();
@@ -379,16 +364,16 @@
                 
                 // Montar HTML com ou sem Fluxo Fiscal dependendo se é fábrica
                 const linhaFluxoFiscal = isFabrica 
-                    ? `${renderLinhaBacklog('Fluxo Fiscal', fluxoFiscal, '#f39c12', '#fef5e7', temFluxoFiscal)}` 
+                    ? `${renderLinhaBacklog('Fluxo Fiscal', fluxoFiscal, '#d35400', '#fff3e0', temFluxoFiscal)}` 
                     : '';
                 
                 card.innerHTML = `
                     <div class="dock-total-header">
-                        <div class="dock-total-value-top">${formatarNumeroInteiro(backlogPuro)}</div>
+                        <div class="dock-total-value-top">${formatarNumeroInteiro(totalCardValor)}</div>
                         <div class="dock-total-name">${cd.nome}</div>
                     </div>
                     <div style="padding: 12px 14px; display: flex; flex-direction: column; gap: 6px;">
-                        ${renderLinhaBacklog('Backlog', backlogPuro, '#0f5132', '#e9f6ef', true)}
+                        ${renderLinhaBacklog('Backlog', backlogPuro, '#7f8c8d', '#f4f4f4', true)}
                         ${linhaFluxoFiscal}
                         ${renderLinhaBacklog('Vendas', backlogVendas, '#2c3e50', '#f6f7f9', true)}
                         ${renderLinhaBacklog('Transferências', backlogTransferencias, '#2c3e50', '#f6f7f9', true)}
@@ -401,14 +386,14 @@
             const totalGeralCard = document.createElement('div');
             totalGeralCard.className = 'dock-total-card dock-card-total-geral';
             
-            const totalGeral = totalBacklogPuro;  // Total já é o pendente real
+            const totalGeral = totalBacklogPuro + totalFluxoFiscal;  // Total agora inclui fluxo fiscal
             const badgeFluxo = temFluxoFiscal
-                ? `<span style="padding: 4px 8px; background: rgba(155,89,182,0.15); color: #d5c4e8; border-radius: 999px; font-size: 12px; font-weight: 600;">Fluxo Fiscal: ${formatarNumeroInteiro(totalFluxoFiscal)}</span>`
+                ? `<span style="padding: 4px 8px; background: rgba(230,126,34,0.32); color: #ffffff; border-radius: 999px; font-size: 12px; font-weight: 700;">Fluxo Fiscal: ${formatarNumeroInteiro(totalFluxoFiscal)}</span>`
                 : '';
-            const badgePuro = `<span style="padding: 4px 8px; background: rgba(0,0,0,0.15); color: #e8f6ef; border-radius: 999px; font-size: 12px; font-weight: 600;">Backlog: ${formatarNumeroInteiro(totalBacklogPuro)}</span>`;
+            const badgePuro = `<span style="padding: 4px 8px; background: rgba(231,76,60,0.32); color: #ffffff; border-radius: 999px; font-size: 12px; font-weight: 700;">Backlog: ${formatarNumeroInteiro(totalBacklogPuro)}</span>`;
 
             totalGeralCard.innerHTML = `
-                <div class="dock-total-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; border-radius: 12px 12px 0 0;">
+                <div class="dock-total-header" style="background: linear-gradient(135deg, #e74c3c 0%, #d35400 100%); color: white; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; border-radius: 12px 12px 0 0;">
                     <div class="dock-total-value-top" style="color: white; font-size: 2.5em; font-weight: 800; margin-top: 8px;">${formatarNumeroInteiro(totalGeral)}</div>
                     <div class="dock-total-name" style="color: white; font-size: 1.1em; font-weight: 600;">TOTAL BRASIL</div>
                     <div style="display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; font-size: 0.9em;">
