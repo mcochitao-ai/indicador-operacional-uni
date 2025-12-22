@@ -362,10 +362,15 @@ def processar_capacidade(filepath, dia):
             if backlog_vendas < 0:
                 backlog_vendas = 0
             
-            # Fluxo Fiscal = Total de Fluxo - Faturado/Expedido
-            fluxo_fiscal = cd['total_fluxo'] - faturado_expedido_formatado
-            # Garantir que não seja negativo
-            if fluxo_fiscal < 0:
+            # Fluxo Fiscal: considerar apenas para Indaiatuba e Igarassu
+            # Para os demais CDs, o fluxo fiscal não deve ser considerado
+            nomes_fluxo_validos = {"INDAIATUBA", "IGARASSU"}
+            nome_cd_norm = str(cd['nome']).strip().upper() if cd.get('nome') else ""
+            if nome_cd_norm in nomes_fluxo_validos:
+                fluxo_fiscal = cd['total_fluxo'] - faturado_expedido_formatado
+                if fluxo_fiscal < 0:
+                    fluxo_fiscal = 0
+            else:
                 fluxo_fiscal = 0
             
             # Backlog total = Backlog de vendas + Backlog de transferências
