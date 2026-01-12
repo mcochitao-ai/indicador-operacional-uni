@@ -150,24 +150,24 @@ def processar_capacidade(filepath, dia):
             if not cd_nome:
                 continue
             
-            # Capacidade geral: X / C
-            valor_x = ws[f'X{row}'].value
+            # Capacidade geral: Y / C (X virou Y após inserção da coluna T)
+            valor_y = ws[f'Y{row}'].value
             valor_c = ws[f'C{row}'].value
             
-            # Capacidade de pallet: AM
-            capacidade_pallet = ws[f'AM{row}'].value
+            # Capacidade de pallet: AN (AM virou AN após inserção da coluna T)
+            capacidade_pallet = ws[f'AN{row}'].value
             
-            # Capacidade de caixas: AH
-            capacidade_caixas = ws[f'AH{row}'].value
+            # Capacidade de caixas: AI (AH virou AI após inserção da coluna T)
+            capacidade_caixas = ws[f'AI{row}'].value
             
-            # Status de abertura para inclusão: Y
-            status_inclusao = ws[f'Y{row}'].value
+            # Status de abertura para inclusão: Z (Y virou Z após inserção da coluna T)
+            status_inclusao = ws[f'Z{row}'].value
             
-            # Status de abertura para caixas: Z
-            status_caixas = ws[f'Z{row}'].value
+            # Status de abertura para caixas: AA (Z virou AA após inserção da coluna T)
+            status_caixas = ws[f'AA{row}'].value
             
-            # Status de abertura para pallets: AA
-            status_pallets = ws[f'AA{row}'].value
+            # Status de abertura para pallets: AB (AA virou AB após inserção da coluna T)
+            status_pallets = ws[f'AB{row}'].value
             
             # Dock Vendas para Faturamento: D
             dock_vendas = ws[f'D{row}'].value
@@ -179,23 +179,27 @@ def processar_capacidade(filepath, dia):
             vendas_f = ws[f'F{row}'].value
             vendas_i = ws[f'I{row}'].value
             
-            # Dock Total - Transferências: N, Q, T, U
+            # Dock Total - Transferências: N, Q, U, V (T agora é faturado)
             transf_n = ws[f'N{row}'].value
             transf_q = ws[f'Q{row}'].value
-            transf_t = ws[f'T{row}'].value
             transf_u = ws[f'U{row}'].value
+            transf_v = ws[f'V{row}'].value
             
-            # Agendamentos: AB
-            agendamentos = ws[f'AB{row}'].value
+            # Agendamentos: AC (AB virou AC após inserção da coluna T)
+            agendamentos = ws[f'AC{row}'].value
             
-            # Backlog de Transferências: S (linhas 4-11)
-            backlog_transferencias = ws[f'S{row}'].value
+            # Perdas de Transferências: R e S (linhas 4-11)
+            perdas_transf_r = ws[f'R{row}'].value
+            perdas_transf_s = ws[f'S{row}'].value
             
-            # Calcular capacidade geral (sempre será X/C * 100)
+            # Faturado de Transferências: T (linhas 4-11) - NOVA COLUNA
+            faturado_transferencias = ws[f'T{row}'].value
+            
+            # Calcular capacidade geral (sempre será Y/C * 100)
             capacidade_geral = None
-            if valor_x is not None and valor_c is not None and valor_c != 0:
+            if valor_y is not None and valor_c is not None and valor_c != 0:
                 try:
-                    capacidade_geral = round((float(valor_x) / float(valor_c)) * 100, 0)
+                    capacidade_geral = round((float(valor_y) / float(valor_c)) * 100, 0)
                 except (ValueError, TypeError):
                     capacidade_geral = None
             
@@ -268,7 +272,7 @@ def processar_capacidade(filepath, dia):
             
             # Processar Dock Total - Transferências
             dock_total_transferencias = 0
-            for valor in [transf_n, transf_q, transf_t, transf_u]:
+            for valor in [transf_n, transf_q, transf_u, transf_v]:
                 if valor is not None:
                     try:
                         dock_total_transferencias += float(valor)
@@ -295,13 +299,35 @@ def processar_capacidade(filepath, dia):
                 except (ValueError, TypeError):
                     agendamentos_formatado = 0
             
-            # Backlog de Transferências formatado
-            backlog_transferencias_formatado = 0
-            if backlog_transferencias is not None:
+            # Processar Perdas de Transferências (R e S)
+            perdas_transf_r_formatado = 0
+            perdas_transf_s_formatado = 0
+            
+            if perdas_transf_r is not None:
                 try:
-                    backlog_transferencias_formatado = float(backlog_transferencias)
+                    perdas_transf_r_formatado = float(perdas_transf_r)
                 except (ValueError, TypeError):
-                    backlog_transferencias_formatado = 0
+                    perdas_transf_r_formatado = 0
+            
+            if perdas_transf_s is not None:
+                try:
+                    perdas_transf_s_formatado = float(perdas_transf_s)
+                except (ValueError, TypeError):
+                    perdas_transf_s_formatado = 0
+            
+            # Processar Faturado de Transferências (T)
+            faturado_transferencias_formatado = 0
+            if faturado_transferencias is not None:
+                try:
+                    faturado_transferencias_formatado = float(faturado_transferencias)
+                except (ValueError, TypeError):
+                    faturado_transferencias_formatado = 0
+            
+            # Calcular Backlog de Transferências = (R + S) - T
+            backlog_transferencias_formatado = (perdas_transf_r_formatado + perdas_transf_s_formatado) - faturado_transferencias_formatado
+            # Garantir que não seja negativo
+            if backlog_transferencias_formatado < 0:
+                backlog_transferencias_formatado = 0
             
             cd_data = {
                 'nome': cd_nome,
